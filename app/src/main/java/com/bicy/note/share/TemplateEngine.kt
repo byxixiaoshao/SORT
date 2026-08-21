@@ -53,6 +53,8 @@ interface TemplateEngine {
 data class TemplateConfig(
     val bgColor: Long = 0xFFFAFAFA,
     val textColor: Long = 0xFF1A1A1A,
+    val dateColor: Long = 0xFF888888,
+    val dividerColor: Long = 0xFFE0E0E0,
     val showWatermark: Boolean = true,
     val watermarkText: String = "来自「寄意」笔记",
     val canvasWidth: Int = 1080,

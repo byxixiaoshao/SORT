@@ -38,6 +38,8 @@ class JsonTemplate(
             nodes = data.nodes.map { node ->
                 when (node) {
                     is LayoutNode.TextNode -> node.copy(color = config.textColor)
+                    is LayoutNode.DateNode -> node.copy(color = config.dateColor)
+                    is LayoutNode.LineNode -> node.copy(color = config.dividerColor)
                     is LayoutNode.WatermarkNode -> node.copy(
                         opacity = if (config.showWatermark) node.coerceOpacity() else 0f,
                         text = config.watermarkText,

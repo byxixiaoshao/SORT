@@ -19,12 +19,10 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -76,12 +74,18 @@ fun SharePreviewDialog(
     var selectedEngine by remember { mutableStateOf(engines.firstOrNull()) }
 
     // 颜色用 HSL 滑块控制
-    var bgHue by remember { mutableFloatStateOf(0f) }       // 0~360
-    var bgSat by remember { mutableFloatStateOf(0f) }       // 0~1 (0=灰阶)
-    var bgLit by remember { mutableFloatStateOf(0.96f) }    // 0~1
+    var bgHue by remember { mutableFloatStateOf(0f) }
+    var bgSat by remember { mutableFloatStateOf(0f) }
+    var bgLit by remember { mutableFloatStateOf(0.96f) }
     var textHue by remember { mutableFloatStateOf(0f) }
     var textSat by remember { mutableFloatStateOf(0f) }
     var textLit by remember { mutableFloatStateOf(0.1f) }
+    var dateHue by remember { mutableFloatStateOf(0f) }
+    var dateSat by remember { mutableFloatStateOf(0f) }
+    var dateLit by remember { mutableFloatStateOf(0.47f) }
+    var divHue by remember { mutableFloatStateOf(0f) }
+    var divSat by remember { mutableFloatStateOf(0f) }
+    var divLit by remember { mutableFloatStateOf(0.88f) }
 
     var showWatermark by remember { mutableStateOf(true) }
     var watermarkText by remember { mutableStateOf("来自「寄意」笔记") }
@@ -95,8 +99,10 @@ fun SharePreviewDialog(
 
     val bgColor = hslToArgb(bgHue, bgSat, bgLit)
     val textColor = hslToArgb(textHue, textSat, textLit)
+    val dateColor = hslToArgb(dateHue, dateSat, dateLit)
+    val dividerColor = hslToArgb(divHue, divSat, divLit)
 
-    LaunchedEffect(selectedEngine, bgColor, textColor, showWatermark, watermarkText) {
+    LaunchedEffect(selectedEngine, bgColor, textColor, dateColor, dividerColor, showWatermark, watermarkText) {
         previewBitmap = selectedEngine?.render(
             context = context,
             dateTime = dateTime,
@@ -106,13 +112,19 @@ fun SharePreviewDialog(
             config = TemplateConfig(
                 bgColor = bgColor,
                 textColor = textColor,
+                dateColor = dateColor,
+                dividerColor = dividerColor,
                 showWatermark = showWatermark,
                 watermarkText = watermarkText,
             ),
         )
     }
 
-    Column(modifier = Modifier.fillMaxSize()) {
+    Surface(
+        modifier = Modifier.fillMaxSize(),
+        color = MaterialTheme.colorScheme.scrim.copy(alpha = 0.7f),
+    ) {
+        Column(modifier = Modifier.fillMaxSize()) {
         // ═══════════ 上方：标题 + 预览 ═══════════
         Row(
             modifier = Modifier
@@ -127,7 +139,7 @@ fun SharePreviewDialog(
             }
         }
 
-        // 预览图（可滚动，适应高模板）
+        // 预览图（自适应预览区高度）
         val preview = previewBitmap
         if (preview != null) {
             Box(
@@ -142,7 +154,6 @@ fun SharePreviewDialog(
                     contentDescription = "预览",
                     modifier = Modifier
                         .fillMaxWidth(0.8f)
-                        .heightIn(max = 400.dp)
                         .aspectRatio(preview.width.toFloat() / preview.height)
                         .clip(RoundedCornerShape(12.dp))
                         .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(12.dp)),
@@ -241,6 +252,30 @@ fun SharePreviewDialog(
 
             Spacer(modifier = Modifier.height(12.dp))
 
+            // 日期色滑块
+            Text("日期颜色", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Spacer(modifier = Modifier.height(4.dp))
+            ColorSlider(
+                hue = dateHue, onHueChange = { dateHue = it },
+                sat = dateSat, onSatChange = { dateSat = it },
+                lit = dateLit, onLitChange = { dateLit = it },
+                previewColor = Color.hsl(dateHue, dateSat, dateLit),
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // 分隔线色滑块
+            Text("装饰颜色", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Spacer(modifier = Modifier.height(4.dp))
+            ColorSlider(
+                hue = divHue, onHueChange = { divHue = it },
+                sat = divSat, onSatChange = { divSat = it },
+                lit = divLit, onLitChange = { divLit = it },
+                previewColor = Color.hsl(divHue, divSat, divLit),
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
             // 水印
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -290,6 +325,7 @@ fun SharePreviewDialog(
             Icon(Icons.Outlined.Share, contentDescription = null, modifier = Modifier.size(20.dp))
             Spacer(modifier = Modifier.width(8.dp))
             Text("分享图片")
+        }
         }
     }
 
