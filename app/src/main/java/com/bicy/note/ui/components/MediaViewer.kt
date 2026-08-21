@@ -305,10 +305,10 @@ fun NoteDetailSheet(
                                 // 加载图片并打开分享预览弹窗
                                 scope.launch(Dispatchers.IO) {
                                     val imgs = entry.images.mapNotNull { name ->
-                                        com.bicy.note.share.ShareImageBuilder.loadBitmap(context, "notes/image_and_video", name, maxSize = 2400)
+                                        com.bicy.note.share.CanvasRenderer.loadBitmap(context, "notes/image_and_video", name, maxSize = 2400)
                                     }
                                     val covers = entry.videos.mapNotNull { name ->
-                                        com.bicy.note.share.ShareImageBuilder.loadBitmap(context, "notes/image_and_video", name, maxSize = 2400)
+                                        com.bicy.note.share.CanvasRenderer.loadBitmap(context, "notes/image_and_video", name, maxSize = 2400)
                                     }
                                     shareImages = imgs
                                     shareVideoCovers = covers

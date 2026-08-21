@@ -1,166 +1,129 @@
 package com.bicy.note.share
 
-object BuiltinTemplates {
+import android.content.Context
+import android.graphics.Bitmap
+import com.bicy.note.data.model.NoteEntry
+import java.time.LocalDateTime
 
-    val minimal = TemplateSchema(
-        id = "builtin_minimal",
-        name = "极简",
-        canvas = CanvasConfig(
-            width = 1080,
-            height = 1920,
-            background = BackgroundConfig(type = "solid", color = 0xFFFAFAFA),
-        ),
-        nodes = listOf(
-            LayoutNode.DateNode(
-                id = "date", x = 8f, y = 5f,
-                fontSize = 32, color = 0xFF888888,
-            ),
-            LayoutNode.LineNode(
-                id = "divider1", x = 8f, y = -1f,
-                width = 84f, thickness = 1f, color = 0xFFE0E0E0,
-            ),
-            LayoutNode.SpacerNode(
-                id = "sp0", x = 0f, y = -1f, height = 20f,
-            ),
-            LayoutNode.TextNode(
-                id = "text", x = 8f, y = -1f,
-                width = 84f, fontSize = 44,
-                color = 0xFF1A1A1A, maxLines = 30,
-                content = "{{text}}",
-            ),
-            LayoutNode.SpacerNode(
-                id = "sp1", x = 0f, y = -1f, height = 28f,
-            ),
-            LayoutNode.ImageGridNode(
-                id = "images", x = 8f, y = -1f,
-                width = 84f, columns = 2,
-                spacing = 16f, borderRadius = 12f,
-                maxImages = 9,
-            ),
-            LayoutNode.SpacerNode(
-                id = "sp2", x = 0f, y = -1f, height = 36f,
-            ),
-            LayoutNode.WatermarkNode(
-                id = "watermark", x = 50f, y = -1f,
-                fontSize = 26, color = 0xFFBBBBBB,
-                text = "来自「寄意」笔记",
-            ),
-        ),
-        decorations = listOf(
-            Decoration.BorderDecoration(
-                id = "border",
-                color = 0xFFE8E8E8, thickness = 2f,
-                cornerRadius = 20f, style = "solid",
-            ),
-        ),
-    )
+class MinimalTemplate : TemplateEngine {
+    override val id = "builtin_minimal"
+    override val name = "极简"
+    override val description = "简洁白底，文字居上，图片网格居下"
 
-    val card = TemplateSchema(
-        id = "builtin_card",
-        name = "卡片",
-        canvas = CanvasConfig(
-            width = 1080,
-            height = 1920,
-            background = BackgroundConfig(type = "solid", color = 0xFFF5F5F5),
-        ),
-        nodes = listOf(
-            LayoutNode.DateNode(
-                id = "date", x = 10f, y = 5f,
-                fontSize = 28, color = 0xFF999999,
+    override fun render(
+        context: Context?,
+        dateTime: LocalDateTime,
+        entry: NoteEntry,
+        images: List<Bitmap>,
+        videoCovers: List<Bitmap>,
+        config: TemplateConfig,
+    ): Bitmap {
+        val schema = TemplateSchema(
+            id = id, name = name,
+            canvas = CanvasConfig(
+                width = config.canvasWidth, height = config.canvasMaxHeight,
+                background = BackgroundConfig(type = "solid", color = config.bgColor),
             ),
-            LayoutNode.SpacerNode(
-                id = "sp0", x = 0f, y = -1f, height = 16f,
+            nodes = listOf(
+                LayoutNode.DateNode(id = "date", x = 8f, y = 5f, fontSize = 32, color = 0xFF888888),
+                LayoutNode.LineNode(id = "div", x = 8f, y = -1f, width = 84f, thickness = 1f, color = 0xFFE0E0E0),
+                LayoutNode.SpacerNode(id = "s0", x = 0f, y = -1f, height = 20f),
+                LayoutNode.TextNode(id = "text", x = 8f, y = -1f, width = 84f, fontSize = 44,
+                    color = config.textColor, maxLines = 30, content = "{{text}}"),
+                LayoutNode.SpacerNode(id = "s1", x = 0f, y = -1f, height = 28f),
+                LayoutNode.ImageGridNode(id = "img", x = 8f, y = -1f, width = 84f, columns = 2,
+                    spacing = 16f, borderRadius = 12f, maxImages = 9),
+                LayoutNode.SpacerNode(id = "s2", x = 0f, y = -1f, height = 36f),
+                LayoutNode.WatermarkNode(id = "wm", x = 50f, y = -1f, fontSize = 26,
+                    color = 0xFFBBBBBB, opacity = if (config.showWatermark) 0.5f else 0f,
+                    text = config.watermarkText),
             ),
-            LayoutNode.TextNode(
-                id = "text", x = 10f, y = -1f,
-                width = 80f, fontSize = 44,
-                color = 0xFF222222, fontWeight = 700,
-                maxLines = 30,
-                content = "{{text}}",
+            decorations = listOf(
+                Decoration.BorderDecoration(id = "b", color = 0xFFE8E8E8, thickness = 2f, cornerRadius = 20f),
             ),
-            LayoutNode.SpacerNode(
-                id = "sp1", x = 0f, y = -1f, height = 20f,
-            ),
-            LayoutNode.LineNode(
-                id = "divider", x = 10f, y = -1f,
-                width = 80f, thickness = 1f, color = 0xFFDDDDDD,
-            ),
-            LayoutNode.SpacerNode(
-                id = "sp2", x = 0f, y = -1f, height = 20f,
-            ),
-            LayoutNode.ImageGridNode(
-                id = "images", x = 10f, y = -1f,
-                width = 80f, columns = 2,
-                spacing = 14f, borderRadius = 14f,
-                maxImages = 6,
-            ),
-            LayoutNode.SpacerNode(
-                id = "sp3", x = 0f, y = -1f, height = 28f,
-            ),
-            LayoutNode.WatermarkNode(
-                id = "watermark", x = 50f, y = -1f,
-                fontSize = 24, color = 0xFFCCCCCC,
-                text = "寄意",
-            ),
-        ),
-        decorations = listOf(
-            Decoration.BorderDecoration(
-                id = "border",
-                color = 0xFFDDDDDD, thickness = 2f,
-                cornerRadius = 28f, style = "solid",
-            ),
-        ),
-    )
+        )
+        return CanvasRenderer.render(context, schema, dateTime, entry, images, videoCovers)
+    }
+}
 
-    val magazine = TemplateSchema(
-        id = "builtin_magazine",
-        name = "杂志",
-        canvas = CanvasConfig(
-            width = 1080,
-            height = 1920,
-            background = BackgroundConfig(type = "solid", color = 0xFF1A1A1A),
-        ),
-        nodes = listOf(
-            LayoutNode.ImageGridNode(
-                id = "images", x = 0f, y = 0f,
-                width = 100f, columns = 1,
-                spacing = 0f, borderRadius = 0f,
-                maxImages = 1,
-            ),
-            LayoutNode.TextNode(
-                id = "text", x = 8f, y = 55f,
-                width = 84f, fontSize = 56,
-                color = 0xFFFFFFFF, fontWeight = 700,
-                maxLines = 10,
-                content = "{{text}}",
-            ),
-            LayoutNode.LineNode(
-                id = "accent", x = 8f, y = 90f,
-                width = 20f, thickness = 4f,
-                color = 0xFFD4AF37,
-            ),
-            LayoutNode.DateNode(
-                id = "date", x = 8f, y = 92f,
-                fontSize = 28, color = 0xFF888888,
-            ),
-            LayoutNode.WatermarkNode(
-                id = "watermark", x = 50f, y = 97f,
-                fontSize = 24, color = 0xFF666666,
-                text = "寄意",
-            ),
-        ),
-        decorations = listOf(
-            Decoration.CornerDecoration(
-                id = "corner",
-                cornerType = "diamond",
-                color = 0xFFD4AF37,
-                size = 50f, thickness = 2f,
-            ),
-        ),
-    )
+class CardTemplate : TemplateEngine {
+    override val id = "builtin_card"
+    override val name = "卡片"
+    override val description = "浅灰底圆角卡片，正文加粗"
 
-    val all = listOf(minimal, card, magazine)
+    override fun render(
+        context: Context?,
+        dateTime: LocalDateTime,
+        entry: NoteEntry,
+        images: List<Bitmap>,
+        videoCovers: List<Bitmap>,
+        config: TemplateConfig,
+    ): Bitmap {
+        val schema = TemplateSchema(
+            id = id, name = name,
+            canvas = CanvasConfig(
+                width = config.canvasWidth, height = config.canvasMaxHeight,
+                background = BackgroundConfig(type = "solid", color = config.bgColor),
+            ),
+            nodes = listOf(
+                LayoutNode.DateNode(id = "date", x = 10f, y = 5f, fontSize = 28, color = 0xFF999999),
+                LayoutNode.SpacerNode(id = "s0", x = 0f, y = -1f, height = 16f),
+                LayoutNode.TextNode(id = "text", x = 10f, y = -1f, width = 80f, fontSize = 44,
+                    color = config.textColor, fontWeight = 700, maxLines = 30, content = "{{text}}"),
+                LayoutNode.SpacerNode(id = "s1", x = 0f, y = -1f, height = 20f),
+                LayoutNode.LineNode(id = "div", x = 10f, y = -1f, width = 80f, thickness = 1f, color = 0xFFDDDDDD),
+                LayoutNode.SpacerNode(id = "s2", x = 0f, y = -1f, height = 20f),
+                LayoutNode.ImageGridNode(id = "img", x = 10f, y = -1f, width = 80f, columns = 2,
+                    spacing = 14f, borderRadius = 14f, maxImages = 6),
+                LayoutNode.SpacerNode(id = "s3", x = 0f, y = -1f, height = 28f),
+                LayoutNode.WatermarkNode(id = "wm", x = 50f, y = -1f, fontSize = 24,
+                    color = 0xFFCCCCCC, opacity = if (config.showWatermark) 0.5f else 0f,
+                    text = config.watermarkText),
+            ),
+            decorations = listOf(
+                Decoration.BorderDecoration(id = "b", color = 0xFFDDDDDD, thickness = 2f, cornerRadius = 28f),
+            ),
+        )
+        return CanvasRenderer.render(context, schema, dateTime, entry, images, videoCovers)
+    }
+}
 
-    fun getById(id: String): TemplateSchema =
-        all.firstOrNull { it.id == id } ?: minimal
+class MagazineTemplate : TemplateEngine {
+    override val id = "builtin_magazine"
+    override val name = "杂志"
+    override val description = "深色底，大图占满顶部，金色装饰线"
+
+    override fun render(
+        context: Context?,
+        dateTime: LocalDateTime,
+        entry: NoteEntry,
+        images: List<Bitmap>,
+        videoCovers: List<Bitmap>,
+        config: TemplateConfig,
+    ): Bitmap {
+        val bg = if (config.bgColor == TemplateConfig().bgColor) 0xFF1A1A1A else config.bgColor
+        val textC = if (config.textColor == TemplateConfig().textColor) 0xFFFFFFFF else config.textColor
+        val schema = TemplateSchema(
+            id = id, name = name,
+            canvas = CanvasConfig(
+                width = config.canvasWidth, height = config.canvasMaxHeight,
+                background = BackgroundConfig(type = "solid", color = bg),
+            ),
+            nodes = listOf(
+                LayoutNode.ImageGridNode(id = "img", x = 0f, y = 0f, width = 100f, columns = 1,
+                    spacing = 0f, borderRadius = 0f, maxImages = 1),
+                LayoutNode.TextNode(id = "text", x = 8f, y = 55f, width = 84f, fontSize = 56,
+                    color = textC, fontWeight = 700, maxLines = 10, content = "{{text}}"),
+                LayoutNode.LineNode(id = "accent", x = 8f, y = 90f, width = 20f, thickness = 4f, color = 0xFFD4AF37),
+                LayoutNode.DateNode(id = "date", x = 8f, y = 92f, fontSize = 28, color = 0xFF888888),
+                LayoutNode.WatermarkNode(id = "wm", x = 50f, y = 97f, fontSize = 24,
+                    color = 0xFF666666, opacity = if (config.showWatermark) 0.5f else 0f,
+                    text = config.watermarkText),
+            ),
+            decorations = listOf(
+                Decoration.CornerDecoration(id = "c", cornerType = "diamond", color = 0xFFD4AF37, size = 50f, thickness = 2f),
+            ),
+        )
+        return CanvasRenderer.render(context, schema, dateTime, entry, images, videoCovers)
+    }
 }

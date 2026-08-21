@@ -24,7 +24,12 @@ import java.time.LocalDateTime
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 
-object ShareImageBuilder {
+/**
+ * Canvas 渲染引擎。
+ * 将 TemplateSchema + 笔记内容渲染为 Bitmap。
+ * 被 [TemplateEngine] 实现调用，不直接对外使用。
+ */
+object CanvasRenderer {
 
     private val markerLabels = mapOf(
         MARKER_STAR to "临时",
@@ -38,25 +43,31 @@ object ShareImageBuilder {
     )
 
     fun render(
-        context: Context,
+        context: Context?,
+        schema: TemplateSchema,
+        dateTime: LocalDateTime,
+        entry: NoteEntry,
+        images: List<Bitmap>,
+        videoCovers: List<Bitmap>,
+    ): Bitmap {
+        return renderInternal(schema, dateTime, entry, images, videoCovers)
+    }
+
+    /** 兼容旧入口：LocalDate + entry.time */
+    fun renderFromDate(
+        context: Context?,
         schema: TemplateSchema,
         date: LocalDate,
         entry: NoteEntry,
         images: List<Bitmap>,
         videoCovers: List<Bitmap>,
     ): Bitmap {
-        // 将 LocalDate + entry.time 合并为 LocalDateTime
-        val time = try {
-            LocalTime.parse(entry.time)
-        } catch (_: Exception) {
-            LocalTime.NOON
-        }
+        val time = try { LocalTime.parse(entry.time) } catch (_: Exception) { LocalTime.NOON }
         val dateTime = LocalDateTime.of(date, time)
-        return renderWithDateTime(context, schema, dateTime, entry, images, videoCovers)
+        return renderInternal(schema, dateTime, entry, images, videoCovers)
     }
 
-    fun renderWithDateTime(
-        context: Context?,
+    private fun renderInternal(
         schema: TemplateSchema,
         dateTime: LocalDateTime,
         entry: NoteEntry,

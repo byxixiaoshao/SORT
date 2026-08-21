@@ -1,8 +1,5 @@
 package com.bicy.note.share
 
-import android.content.ClipData
-import android.content.ClipboardManager
-import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
 import android.widget.Toast
@@ -34,11 +31,11 @@ import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -50,13 +47,11 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import com.bicy.note.data.model.MARKER_CIRCLE
 import com.bicy.note.data.model.NoteEntry
 import java.io.File
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.LocalTime
-import java.time.format.DateTimeFormatter
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -68,25 +63,47 @@ fun SharePreviewDialog(
     onDismiss: () -> Unit,
 ) {
     val context = LocalContext.current
-    var selectedTemplate by remember { mutableStateOf(BuiltinTemplates.minimal) }
-    var bgColor by remember { mutableStateOf("#FAFAFA") }
-    var textColor by remember { mutableStateOf("#1A1A1A") }
+    val engines = remember { TemplateRegistry.getAll() }
+    var selectedEngine by remember { mutableStateOf(engines.firstOrNull()) }
+    var bgColor by remember { mutableStateOf(0xFFFAFAFA) }
+    var textColor by remember { mutableStateOf(0xFF1A1A1A) }
     var showWatermark by remember { mutableStateOf(true) }
     var previewBitmap by remember { mutableStateOf<Bitmap?>(null) }
 
-    // 预览时实时渲染
     val time = try { LocalTime.parse(entry.time) } catch (_: Exception) { LocalTime.NOON }
     val dateTime = LocalDateTime.of(date, time)
 
     // 预设背景色
     val bgPresets = listOf(
-        "#FAFAFA" to "浅灰",
-        "#FFFFFF" to "纯白",
-        "#F5F5DC" to "米色",
-        "#1A1A1A" to "深黑",
-        "#263238" to "深蓝灰",
-        "#FFF8E1" to "暖黄",
+        0xFFFAFAFA to "浅灰",
+        0xFFFFFFFF to "纯白",
+        0xFFF5F5DC to "米色",
+        0xFF1A1A1A to "深黑",
+        0xFF263238 to "深蓝灰",
+        0xFFFFF8E1 to "暖黄",
     )
+    val textPresets = listOf(
+        0xFF1A1A1A to "黑",
+        0xFFFFFFFF to "白",
+        0xFF5D4037 to "棕",
+        0xFF1565C0 to "蓝",
+    )
+
+    // 实时预览渲染
+    LaunchedEffect(selectedEngine, bgColor, textColor, showWatermark) {
+        previewBitmap = selectedEngine?.render(
+            context = context,
+            dateTime = dateTime,
+            entry = entry,
+            images = images,
+            videoCovers = videoCovers,
+            config = TemplateConfig(
+                bgColor = bgColor,
+                textColor = textColor,
+                showWatermark = showWatermark,
+            ),
+        )
+    }
 
     Surface(
         modifier = Modifier
@@ -101,17 +118,12 @@ fun SharePreviewDialog(
                 .verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            // 标题栏
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text(
-                    text = "分享预览",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onSurface,
-                )
+                Text("分享预览", style = MaterialTheme.typography.titleMedium)
                 IconButton(onClick = onDismiss) {
                     Icon(Icons.Outlined.Close, contentDescription = "关闭")
                 }
@@ -120,18 +132,7 @@ fun SharePreviewDialog(
             Spacer(modifier = Modifier.height(8.dp))
 
             // 预览图
-            val preview = renderPreview(
-                schema = selectedTemplate,
-                dateTime = dateTime,
-                entry = entry,
-                images = images,
-                videoCovers = videoCovers,
-                bgColor = bgColor,
-                textColor = textColor,
-                showWatermark = showWatermark,
-            )
-            previewBitmap = preview
-
+            val preview = previewBitmap
             if (preview != null) {
                 Image(
                     bitmap = preview.asImageBitmap(),
@@ -140,11 +141,7 @@ fun SharePreviewDialog(
                         .fillMaxWidth(0.85f)
                         .aspectRatio(preview.width.toFloat() / preview.height)
                         .clip(RoundedCornerShape(12.dp))
-                        .border(
-                            1.dp,
-                            MaterialTheme.colorScheme.outlineVariant,
-                            RoundedCornerShape(12.dp),
-                        ),
+                        .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(12.dp)),
                     contentScale = ContentScale.Fit,
                 )
             }
@@ -152,37 +149,28 @@ fun SharePreviewDialog(
             Spacer(modifier = Modifier.height(16.dp))
 
             // 模板选择
-            Text(
-                text = "模板",
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+            Text("模板", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(modifier = Modifier.height(6.dp))
-            FlowRow(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                BuiltinTemplates.all.forEach { template ->
-                    val selected = selectedTemplate.id == template.id
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                engines.forEach { engine ->
+                    val selected = selectedEngine?.id == engine.id
                     Surface(
                         modifier = Modifier
                             .padding(bottom = 6.dp)
                             .clip(RoundedCornerShape(8.dp))
                             .border(
-                                width = if (selected) 2.dp else 1.dp,
-                                color = if (selected) MaterialTheme.colorScheme.primary
-                                else MaterialTheme.colorScheme.outlineVariant,
-                                shape = RoundedCornerShape(8.dp),
+                                if (selected) 2.dp else 1.dp,
+                                if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant,
+                                RoundedCornerShape(8.dp),
                             )
-                            .clickable { selectedTemplate = template },
-                        color = if (selected) MaterialTheme.colorScheme.primaryContainer
-                        else MaterialTheme.colorScheme.surface,
+                            .clickable { selectedEngine = engine },
+                        color = if (selected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface,
                     ) {
                         Text(
-                            text = template.name,
+                            engine.name,
                             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                             style = MaterialTheme.typography.bodyMedium,
-                            color = if (selected) MaterialTheme.colorScheme.onPrimaryContainer
-                            else MaterialTheme.colorScheme.onSurface,
+                            color = if (selected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface,
                         )
                     }
                 }
@@ -190,47 +178,29 @@ fun SharePreviewDialog(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // 背景色选择
-            Text(
-                text = "背景色",
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+            // 背景色
+            Text("背景色", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(modifier = Modifier.height(6.dp))
-            FlowRow(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                bgPresets.forEach { (hex, label) ->
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                bgPresets.forEach { (hex, _) ->
                     val selected = bgColor == hex
                     Box(
                         modifier = Modifier
                             .padding(bottom = 6.dp)
                             .size(40.dp)
                             .clip(CircleShape)
-                            .background(android.graphics.Color.parseColor(hex).let {
-                                androidx.compose.ui.graphics.Color(
-                                    red = (it shr 16 and 0xFF) / 255f,
-                                    green = (it shr 8 and 0xFF) / 255f,
-                                    blue = (it and 0xFF) / 255f,
-                                )
-                            })
-                            .then(
-                                if (selected) Modifier.border(3.dp, MaterialTheme.colorScheme.primary, CircleShape)
-                                else Modifier.border(1.dp, MaterialTheme.colorScheme.outlineVariant, CircleShape)
-                            )
+                            .background(androidx.compose.ui.graphics.Color(android.graphics.Color.argb(
+                                ((hex shr 24) and 0xFF).toInt(),
+                                ((hex shr 16) and 0xFF).toInt(),
+                                ((hex shr 8) and 0xFF).toInt(),
+                                (hex and 0xFF).toInt(),
+                            )))
+                            .then(if (selected) Modifier.border(3.dp, MaterialTheme.colorScheme.primary, CircleShape)
+                            else Modifier.border(1.dp, MaterialTheme.colorScheme.outlineVariant, CircleShape))
                             .clickable { bgColor = hex },
                         contentAlignment = Alignment.Center,
                     ) {
-                        if (selected) {
-                            Text(
-                                text = "✓",
-                                color = if (hex in listOf("#1A1A1A", "#263238")) {
-                                    MaterialTheme.colorScheme.surface
-                                } else {
-                                    MaterialTheme.colorScheme.onSurface
-                                },
-                            )
-                        }
+                        if (selected) Text("✓", color = if (hex == 0xFF1A1A1A || hex == 0xFF263238) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.onSurface)
                     }
                 }
             }
@@ -238,63 +208,38 @@ fun SharePreviewDialog(
             Spacer(modifier = Modifier.height(16.dp))
 
             // 文字颜色
-            Text(
-                text = "文字颜色",
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+            Text("文字颜色", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(modifier = Modifier.height(6.dp))
-            FlowRow(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                listOf("#1A1A1A" to "黑", "#FFFFFF" to "白", "#5D4037" to "棕", "#1565C0" to "蓝").forEach { (hex, label) ->
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                textPresets.forEach { (hex, _) ->
                     val selected = textColor == hex
                     Box(
                         modifier = Modifier
                             .padding(bottom = 6.dp)
                             .size(40.dp)
                             .clip(CircleShape)
-                            .background(android.graphics.Color.parseColor(hex).let {
-                                androidx.compose.ui.graphics.Color(
-                                    red = (it shr 16 and 0xFF) / 255f,
-                                    green = (it shr 8 and 0xFF) / 255f,
-                                    blue = (it and 0xFF) / 255f,
-                                )
-                            })
-                            .then(
-                                if (selected) Modifier.border(3.dp, MaterialTheme.colorScheme.primary, CircleShape)
-                                else Modifier.border(1.dp, MaterialTheme.colorScheme.outlineVariant, CircleShape)
-                            )
+                            .background(androidx.compose.ui.graphics.Color(android.graphics.Color.argb(
+                                ((hex shr 24) and 0xFF).toInt(),
+                                ((hex shr 16) and 0xFF).toInt(),
+                                ((hex shr 8) and 0xFF).toInt(),
+                                (hex and 0xFF).toInt(),
+                            )))
+                            .then(if (selected) Modifier.border(3.dp, MaterialTheme.colorScheme.primary, CircleShape)
+                            else Modifier.border(1.dp, MaterialTheme.colorScheme.outlineVariant, CircleShape))
                             .clickable { textColor = hex },
                         contentAlignment = Alignment.Center,
                     ) {
-                        if (selected) {
-                            Text(
-                                text = "✓",
-                                color = if (hex == "#1A1A1A") MaterialTheme.colorScheme.surface
-                                else MaterialTheme.colorScheme.onSurface,
-                            )
-                        }
+                        if (selected) Text("✓", color = if (hex == 0xFF1A1A1A) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.onSurface)
                     }
                 }
             }
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // 水印开关
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(
-                    text = "显示水印",
-                    style = MaterialTheme.typography.bodyMedium,
-                )
-                androidx.compose.material3.Switch(
-                    checked = showWatermark,
-                    onCheckedChange = { showWatermark = it },
-                )
+            // 水印
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                Text("显示水印", style = MaterialTheme.typography.bodyMedium)
+                androidx.compose.material3.Switch(checked = showWatermark, onCheckedChange = { showWatermark = it })
             }
 
             Spacer(modifier = Modifier.height(20.dp))
@@ -303,85 +248,26 @@ fun SharePreviewDialog(
             TextButton(
                 onClick = {
                     previewBitmap?.let { bitmap ->
-                        shareBitmap(context, bitmap)
+                        val file = File(context.cacheDir, "share_${System.currentTimeMillis()}.png")
+                        file.outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
+                        val uri = androidx.core.content.FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
+                        context.startActivity(Intent.createChooser(
+                            Intent(Intent.ACTION_SEND).apply {
+                                putExtra(Intent.EXTRA_STREAM, uri)
+                                type = "image/png"
+                                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                            }, "分享记录图片",
+                        ))
                     }
                     onDismiss()
                 },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(48.dp),
+                modifier = Modifier.fillMaxWidth().height(48.dp),
                 shape = RoundedCornerShape(12.dp),
             ) {
-                Icon(
-                    Icons.Outlined.Share,
-                    contentDescription = null,
-                    modifier = Modifier.size(20.dp),
-                )
+                Icon(Icons.Outlined.Share, contentDescription = null, modifier = Modifier.size(20.dp))
                 Spacer(modifier = Modifier.width(8.dp))
-                Text(text = "分享图片")
+                Text("分享图片")
             }
         }
-    }
-}
-
-private fun renderPreview(
-    schema: TemplateSchema,
-    dateTime: LocalDateTime,
-    entry: NoteEntry,
-    images: List<Bitmap>,
-    videoCovers: List<Bitmap>,
-    bgColor: String,
-    textColor: String,
-    showWatermark: Boolean,
-): Bitmap? {
-    val bgLong = android.graphics.Color.parseColor(bgColor).toLong() and 0xFFFFFFFFL shl 0 or
-        (0xFF000000L shl 24)
-    val textLong = android.graphics.Color.parseColor(textColor).toLong() and 0xFFFFFFFFL shl 0 or
-        (0xFF000000L shl 24)
-
-    val customSchema = schema.copy(
-        canvas = schema.canvas.copy(
-            background = BackgroundConfig(type = "solid", color = bgLong),
-        ),
-        nodes = schema.nodes.map { node ->
-            when (node) {
-                is LayoutNode.TextNode -> node.copy(color = textLong)
-                is LayoutNode.WatermarkNode -> node.copy(opacity = if (showWatermark) 0.5f else 0f)
-                else -> node
-            }
-        },
-    )
-
-    return try {
-        ShareImageBuilder.renderWithDateTime(
-            context = null as android.content.Context?,
-            schema = customSchema,
-            dateTime = dateTime,
-            entry = entry,
-            images = images,
-            videoCovers = videoCovers,
-        )
-    } catch (_: Exception) {
-        null
-    }
-}
-
-private fun shareBitmap(context: Context, bitmap: Bitmap) {
-    try {
-        val file = File(context.cacheDir, "share_${System.currentTimeMillis()}.png")
-        file.outputStream().use { out ->
-            bitmap.compress(Bitmap.CompressFormat.PNG, 100, out)
-        }
-        val uri = androidx.core.content.FileProvider.getUriForFile(
-            context, "${context.packageName}.fileprovider", file
-        )
-        val intent = Intent(Intent.ACTION_SEND).apply {
-            putExtra(Intent.EXTRA_STREAM, uri)
-            type = "image/png"
-            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-        }
-        context.startActivity(Intent.createChooser(intent, "分享记录图片"))
-    } catch (e: Exception) {
-        Toast.makeText(context, "分享失败: ${e.message}", Toast.LENGTH_SHORT).show()
     }
 }
