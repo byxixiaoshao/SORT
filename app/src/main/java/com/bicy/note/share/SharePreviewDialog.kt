@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -122,7 +123,7 @@ fun SharePreviewDialog(
 
     Surface(
         modifier = Modifier.fillMaxSize(),
-        color = MaterialTheme.colorScheme.scrim.copy(alpha = 0.7f),
+        color = MaterialTheme.colorScheme.surface,
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
         // ═══════════ 上方：标题 + 预览 ═══════════
@@ -139,7 +140,7 @@ fun SharePreviewDialog(
             }
         }
 
-        // 预览图（自适应预览区高度）
+        // 预览图（自适应填满预览区）
         val preview = previewBitmap
         if (preview != null) {
             Box(
@@ -154,7 +155,7 @@ fun SharePreviewDialog(
                     contentDescription = "预览",
                     modifier = Modifier
                         .fillMaxWidth(0.8f)
-                        .aspectRatio(preview.width.toFloat() / preview.height)
+                        .fillMaxHeight()
                         .clip(RoundedCornerShape(12.dp))
                         .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(12.dp)),
                     contentScale = ContentScale.Fit,
