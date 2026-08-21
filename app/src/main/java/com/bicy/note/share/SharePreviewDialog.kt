@@ -5,6 +5,8 @@ import android.graphics.Bitmap
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -17,6 +19,7 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -124,7 +127,7 @@ fun SharePreviewDialog(
             }
         }
 
-        // 预览图（固定高度，不可滚动）
+        // 预览图（可滚动，适应高模板）
         val preview = previewBitmap
         if (preview != null) {
             Box(
@@ -139,6 +142,7 @@ fun SharePreviewDialog(
                     contentDescription = "预览",
                     modifier = Modifier
                         .fillMaxWidth(0.8f)
+                        .heightIn(max = 400.dp)
                         .aspectRatio(preview.width.toFloat() / preview.height)
                         .clip(RoundedCornerShape(12.dp))
                         .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(12.dp)),
@@ -159,18 +163,35 @@ fun SharePreviewDialog(
             Text("模板", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(modifier = Modifier.height(6.dp))
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                val builtinIds = remember { TemplateRegistry.getBuiltin().map { it.id }.toSet() }
                 engines.forEach { engine ->
                     val selected = selectedEngine?.id == engine.id
+                    val isBuiltin = engine.id in builtinIds
                     Surface(
                         modifier = Modifier
                             .padding(bottom = 6.dp)
                             .clip(RoundedCornerShape(8.dp))
+                            .then(
+                                if (isBuiltin) {
+                                    Modifier.clickable { selectedEngine = engine }
+                                } else {
+                                    Modifier.combinedClickable(
+                                        onClick = { selectedEngine = engine },
+                                        onLongClick = {
+                                            TemplateRegistry.unregister(engine.id)
+                                            engines = TemplateRegistry.getAll()
+                                            if (selectedEngine?.id == engine.id) {
+                                                selectedEngine = engines.firstOrNull()
+                                            }
+                                        },
+                                    )
+                                }
+                            )
                             .border(
                                 if (selected) 2.dp else 1.dp,
                                 if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant,
                                 RoundedCornerShape(8.dp),
-                            )
-                            .clickable { selectedEngine = engine },
+                            ),
                         color = if (selected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface,
                     ) {
                         Text(
@@ -372,8 +393,7 @@ private fun JsonEditorOverlay(
     Surface(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.scrim.copy(alpha = 0.7f))
-            .clickable(onClick = onDismiss),
+            .background(MaterialTheme.colorScheme.scrim.copy(alpha = 0.7f)),
     ) {
         Column(
             modifier = Modifier
