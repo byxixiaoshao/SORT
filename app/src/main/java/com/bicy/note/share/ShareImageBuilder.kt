@@ -126,8 +126,15 @@ object CanvasRenderer {
                         strokeWidth = node.thickness
                         style = Paint.Style.STROKE
                     }
-                    val lineW = if (node.width > 0) node.width / 100f * c.width else c.width.toFloat()
-                    canvas.drawLine(px, py, px + lineW, py, paint)
+                    if (node.height > node.width) {
+                        // 垂直线
+                        val lineH = node.height / 100f * canvasH
+                        canvas.drawLine(px, py, px, py + lineH, paint)
+                    } else {
+                        // 水平线
+                        val lineW = if (node.width > 0) node.width / 100f * c.width else c.width.toFloat()
+                        canvas.drawLine(px, py, px + lineW, py, paint)
+                    }
                     autoY = py + node.thickness + 30f
                 }
                 is LayoutNode.ImageNode -> {
@@ -188,7 +195,11 @@ object CanvasRenderer {
                     autoY = py + node.fontSize + 30f
                 }
                 is LayoutNode.LineNode -> {
-                    autoY = py + node.thickness + 30f
+                    if (node.height > node.width) {
+                        // 垂直线不增加autoY
+                    } else {
+                        autoY = py + node.thickness + 30f
+                    }
                 }
                 is LayoutNode.ImageGridNode -> {
                     val allImages = images + videoCovers

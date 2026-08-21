@@ -49,7 +49,7 @@ class MinimalTemplate : TemplateEngine {
 class CardTemplate : TemplateEngine {
     override val id = "builtin_card"
     override val name = "卡片"
-    override val description = "浅灰底圆角卡片，正文加粗"
+    override val description = "左文右图六四分，中间分割线"
 
     override fun render(
         context: Context?,
@@ -66,17 +66,20 @@ class CardTemplate : TemplateEngine {
                 background = BackgroundConfig(type = "solid", color = config.bgColor),
             ),
             nodes = listOf(
-                LayoutNode.DateNode(id = "date", x = 10f, y = 5f, fontSize = 28, color = config.dateColor),
-                LayoutNode.SpacerNode(id = "s0", x = 0f, y = -1f, height = 50f),
-                LayoutNode.TextNode(id = "text", x = 10f, y = -1f, width = 80f, fontSize = 44,
+                // 左侧正文区 (x=5%, width=55%)
+                LayoutNode.TextNode(id = "text", x = 5f, y = 5f, width = 55f, fontSize = 40,
                     color = config.textColor, fontWeight = 700, maxLines = 30, content = "{{text}}"),
-                LayoutNode.SpacerNode(id = "s1", x = 0f, y = -1f, height = 60f),
-                LayoutNode.LineNode(id = "div", x = 10f, y = -1f, width = 80f, thickness = 1f, color = config.dividerColor),
-                LayoutNode.SpacerNode(id = "s2", x = 0f, y = -1f, height = 60f),
-                LayoutNode.ImageGridNode(id = "img", x = 10f, y = -1f, width = 80f, columns = 2,
-                    spacing = 14f, borderRadius = 14f, maxImages = 6),
-                LayoutNode.SpacerNode(id = "s3", x = 0f, y = -1f, height = 80f),
-                LayoutNode.WatermarkNode(id = "wm", x = 50f, y = -1f, fontSize = 24,
+                // 左侧日期 (右下角，x偏移实现右对齐)
+                LayoutNode.DateNode(id = "date", x = 38f, y = 88f, width = 22f, fontSize = 26,
+                    color = config.dateColor),
+                // 中间分割线 (垂直线用水平线模拟，x=60%位置)
+                LayoutNode.LineNode(id = "div", x = 60f, y = 5f, width = 0.3f, height = 85f,
+                    thickness = 2f, color = config.dividerColor),
+                // 右侧图片区 (x=63%, width=32%)
+                LayoutNode.ImageGridNode(id = "img", x = 63f, y = 5f, width = 32f, columns = 1,
+                    spacing = 12f, borderRadius = 12f, maxImages = 3),
+                // 左下角水印
+                LayoutNode.WatermarkNode(id = "wm", x = 5f, y = 94f, fontSize = 22,
                     color = config.dateColor, opacity = if (config.showWatermark) 0.5f else 0f,
                     text = config.watermarkText),
             ),
