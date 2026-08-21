@@ -12,28 +12,36 @@ object BuiltinTemplates {
         ),
         nodes = listOf(
             LayoutNode.DateNode(
-                id = "date", x = 6f, y = 4f,
+                id = "date", x = 8f, y = 5f,
                 fontSize = 32, color = 0xFF888888,
             ),
             LayoutNode.LineNode(
-                id = "divider1", x = 6f, y = 8f,
-                width = 88f, thickness = 1f, color = 0xFFE0E0E0,
+                id = "divider1", x = 8f, y = -1f,
+                width = 84f, thickness = 1f, color = 0xFFE0E0E0,
             ),
             LayoutNode.TextNode(
-                id = "text", x = 6f, y = 10f,
-                width = 88f, fontSize = 48,
-                color = 0xFF1A1A1A, maxLines = 20,
+                id = "text", x = 8f, y = -1f,
+                width = 84f, fontSize = 44,
+                color = 0xFF1A1A1A, maxLines = 30,
                 content = "{{text}}",
             ),
+            LayoutNode.SpacerNode(
+                id = "spacer", x = 0f, y = -1f,
+                height = 24f,
+            ),
             LayoutNode.ImageGridNode(
-                id = "images", x = 6f, y = -1f,
-                width = 88f, columns = 2,
-                spacing = 12f, borderRadius = 12f,
+                id = "images", x = 8f, y = -1f,
+                width = 84f, columns = 2,
+                spacing = 16f, borderRadius = 12f,
                 maxImages = 9,
             ),
+            LayoutNode.SpacerNode(
+                id = "spacer2", x = 0f, y = -1f,
+                height = 40f,
+            ),
             LayoutNode.WatermarkNode(
-                id = "watermark", x = 50f, y = 95f,
-                fontSize = 28, color = 0xFFBBBBBB,
+                id = "watermark", x = 50f, y = -1f,
+                fontSize = 26, color = 0xFFBBBBBB,
                 text = "来自「寄意」笔记",
             ),
         ),
@@ -41,7 +49,7 @@ object BuiltinTemplates {
             Decoration.BorderDecoration(
                 id = "border",
                 color = 0xFFE8E8E8, thickness = 2f,
-                cornerRadius = 24f, style = "solid",
+                cornerRadius = 20f, style = "solid",
             ),
         ),
     )
@@ -57,28 +65,40 @@ object BuiltinTemplates {
         nodes = listOf(
             LayoutNode.DateNode(
                 id = "date", x = 10f, y = 5f,
-                fontSize = 30, color = 0xFF999999,
+                fontSize = 28, color = 0xFF999999,
             ),
             LayoutNode.TextNode(
-                id = "text", x = 10f, y = 10f,
-                width = 80f, fontSize = 52,
+                id = "text", x = 10f, y = -1f,
+                width = 80f, fontSize = 44,
                 color = 0xFF222222, fontWeight = 700,
-                maxLines = 20,
+                maxLines = 30,
                 content = "{{text}}",
             ),
+            LayoutNode.SpacerNode(
+                id = "spacer", x = 0f, y = -1f,
+                height = 16f,
+            ),
             LayoutNode.LineNode(
-                id = "divider", x = 10f, y = 60f,
+                id = "divider", x = 10f, y = -1f,
                 width = 80f, thickness = 1f, color = 0xFFDDDDDD,
             ),
+            LayoutNode.SpacerNode(
+                id = "spacer2", x = 0f, y = -1f,
+                height = 16f,
+            ),
             LayoutNode.ImageGridNode(
-                id = "images", x = 10f, y = 62f,
+                id = "images", x = 10f, y = -1f,
                 width = 80f, columns = 2,
-                spacing = 16f, borderRadius = 16f,
+                spacing = 14f, borderRadius = 14f,
                 maxImages = 6,
             ),
+            LayoutNode.SpacerNode(
+                id = "spacer3", x = 0f, y = -1f,
+                height = 32f,
+            ),
             LayoutNode.WatermarkNode(
-                id = "watermark", x = 50f, y = 95f,
-                fontSize = 26, color = 0xFFCCCCCC,
+                id = "watermark", x = 50f, y = -1f,
+                fontSize = 24, color = 0xFFCCCCCC,
                 text = "寄意",
             ),
         ),
@@ -86,7 +106,7 @@ object BuiltinTemplates {
             Decoration.BorderDecoration(
                 id = "border",
                 color = 0xFFDDDDDD, thickness = 2f,
-                cornerRadius = 32f, style = "solid",
+                cornerRadius = 28f, style = "solid",
             ),
         ),
     )
@@ -106,25 +126,37 @@ object BuiltinTemplates {
                 spacing = 0f, borderRadius = 0f,
                 maxImages = 1,
             ),
+            LayoutNode.SpacerNode(
+                id = "spacer", x = 0f, y = -1f,
+                height = 32f,
+            ),
             LayoutNode.TextNode(
-                id = "text", x = 8f, y = 55f,
-                width = 84f, fontSize = 56,
+                id = "text", x = 8f, y = -1f,
+                width = 84f, fontSize = 52,
                 color = 0xFFFFFFFF, fontWeight = 700,
                 maxLines = 10,
                 content = "{{text}}",
             ),
+            LayoutNode.SpacerNode(
+                id = "spacer2", x = 0f, y = -1f,
+                height = 40f,
+            ),
             LayoutNode.LineNode(
-                id = "accent", x = 8f, y = 90f,
+                id = "accent", x = 8f, y = -1f,
                 width = 20f, thickness = 4f,
                 color = 0xFFD4AF37,
             ),
             LayoutNode.DateNode(
-                id = "date", x = 8f, y = 92f,
-                fontSize = 28, color = 0xFF888888,
+                id = "date", x = 8f, y = -1f,
+                fontSize = 26, color = 0xFF888888,
+            ),
+            LayoutNode.SpacerNode(
+                id = "spacer3", x = 0f, y = -1f,
+                height = 24f,
             ),
             LayoutNode.WatermarkNode(
-                id = "watermark", x = 50f, y = 97f,
-                fontSize = 24, color = 0xFF666666,
+                id = "watermark", x = 50f, y = -1f,
+                fontSize = 22, color = 0xFF666666,
                 text = "寄意",
             ),
         ),

@@ -87,7 +87,7 @@ object ShareImageBuilder {
                 is LayoutNode.TextNode -> {
                     val text = resolveTextPlaceholder(node.content, dateTime.toLocalDate(), entry)
                     val drawn = drawText(canvas, text, node, px, py, adjustedCanvas)
-                    autoY = py + drawn + 8f
+                    autoY = py + drawn + 20f
                 }
                 is LayoutNode.DateNode -> {
                     val text = dateTime.format(DateTimeFormatter.ofPattern(node.format))
@@ -96,7 +96,7 @@ object ShareImageBuilder {
                         color = node.color.toInt()
                     }
                     canvas.drawText(text, px, py + node.fontSize, paint)
-                    autoY = py + node.fontSize + 16f
+                    autoY = py + node.fontSize + 24f
                 }
                 is LayoutNode.MarkerNode -> {
                     val marker = entry.effectiveMarker()
