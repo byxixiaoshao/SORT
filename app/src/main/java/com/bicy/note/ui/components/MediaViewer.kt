@@ -58,6 +58,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -78,7 +79,11 @@ import com.bicy.note.data.model.MARKER_CIRCLE
 import com.bicy.note.data.model.MARKER_HEART
 import com.bicy.note.data.model.MARKER_STAR
 import com.bicy.note.data.model.NoteEntry
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.launch
 import java.io.File
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -165,6 +170,7 @@ fun NoteDetailSheet(
 ) {
     val context = LocalContext.current
     val repository = LocalRepository.current
+    val scope = rememberCoroutineScope()
     var fullImage by remember { mutableStateOf<String?>(null) }
     var marker by remember(entry) { mutableStateOf(entry.effectiveMarker()) }
     var isEditing by remember { mutableStateOf(false) }
@@ -292,11 +298,39 @@ fun NoteDetailSheet(
                                 )
                             }
                             IconButton(onClick = {
-                                val sendIntent = Intent(Intent.ACTION_SEND).apply {
-                                    putExtra(Intent.EXTRA_TEXT, entry.text)
-                                    type = "text/plain"
+                                // 生成分享图片
+                                scope.launch(Dispatchers.IO) {
+                                    val images = entry.images.mapNotNull { name ->
+                                        com.bicy.note.share.ShareImageBuilder.loadBitmap(context, "notes/image_and_video", name)
+                                    }
+                                    val videoCovers = entry.videos.mapNotNull { name ->
+                                        com.bicy.note.share.ShareImageBuilder.loadBitmap(context, "notes/image_and_video", name, maxSize = 960)
+                                    }
+                                    val bitmap = com.bicy.note.share.ShareImageBuilder.render(
+                                        context = context,
+                                        schema = com.bicy.note.share.BuiltinTemplates.minimal,
+                                        date = date,
+                                        entry = entry,
+                                        images = images,
+                                        videoCovers = videoCovers,
+                                    )
+                                    // 保存到缓存目录
+                                    val file = java.io.File(context.cacheDir, "share_${System.currentTimeMillis()}.png")
+                                    file.outputStream().use { out ->
+                                        bitmap.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, out)
+                                    }
+                                    bitmap.recycle()
+                                    // 分享图片
+                                    val uri = androidx.core.content.FileProvider.getUriForFile(
+                                        context, "${context.packageName}.fileprovider", file
+                                    )
+                                    val intent = Intent(Intent.ACTION_SEND).apply {
+                                        putExtra(Intent.EXTRA_STREAM, uri)
+                                        type = "image/png"
+                                        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                    }
+                                    context.startActivity(Intent.createChooser(intent, "分享记录图片"))
                                 }
-                                context.startActivity(Intent.createChooser(sendIntent, "分享记录"))
                             }) {
                                 Icon(
                                     imageVector = Icons.Outlined.Share,
