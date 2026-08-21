@@ -3,6 +3,7 @@ package com.bicy.note.ui.components
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
+import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.ImageDecoder
 import android.media.MediaPlayer
@@ -31,6 +32,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
@@ -42,6 +44,7 @@ import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.Pause
 import androidx.compose.material.icons.outlined.PlayArrow
 import androidx.compose.material.icons.outlined.Save
+import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -283,6 +286,21 @@ fun NoteDetailSheet(
                                     modifier = Modifier.size(20.dp),
                                 )
                             }
+                            // 分享按钮
+                            IconButton(onClick = {
+                                val sendIntent = Intent(Intent.ACTION_SEND).apply {
+                                    putExtra(Intent.EXTRA_TEXT, entry.text)
+                                    type = "text/plain"
+                                }
+                                context.startActivity(Intent.createChooser(sendIntent, "分享记录"))
+                            }) {
+                                Icon(
+                                    imageVector = Icons.Outlined.Share,
+                                    contentDescription = "分享",
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.size(20.dp),
+                                )
+                            }
                         }
                         IconButton(onClick = onDismiss) {
                             Icon(imageVector = Icons.Outlined.Close, contentDescription = "关闭")
@@ -299,10 +317,12 @@ fun NoteDetailSheet(
                                 minLines = 2,
                             )
                         } else {
-                            Text(
-                                text = entry.text,
-                                style = MaterialTheme.typography.titleLarge,
-                            )
+                            SelectionContainer {
+                                Text(
+                                    text = entry.text,
+                                    style = MaterialTheme.typography.titleLarge,
+                                )
+                            }
                         }
                     }
                     Spacer(modifier = Modifier.height(12.dp))

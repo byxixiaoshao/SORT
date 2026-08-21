@@ -1,6 +1,7 @@
 package com.bicy.note.ui.screens.calendar
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -13,6 +14,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.rememberTextMeasurer
@@ -75,6 +77,7 @@ fun FrequencyChart(
     data: List<Int>,
     labels: List<String?>,
     modifier: Modifier = Modifier,
+    onPointClick: ((index: Int) -> Unit)? = null,
 ) {
     val lineColor = MaterialTheme.colorScheme.primary
     val gridColor = MaterialTheme.colorScheme.outlineVariant
@@ -93,7 +96,33 @@ fun FrequencyChart(
     }
 
     val maxValue = (data.maxOrNull() ?: 1).coerceAtLeast(1)
-    Canvas(modifier = modifier) {
+    Canvas(modifier = modifier.pointerInput(data.size, onPointClick) {
+        detectTapGestures { offset ->
+            if (onPointClick == null || data.size <= 1) return@detectTapGestures
+            val labelHeight = 14.dp.toPx()
+            val chartBottom = size.height - labelHeight - 4.dp.toPx()
+            val chartTop = 16.dp.toPx()
+            val leftPad = 8.dp.toPx()
+            val rightPad = 8.dp.toPx()
+            val chartWidth = size.width - leftPad - rightPad
+            val step = chartWidth / (data.size - 1)
+            // 找到最近的数据点
+            val clickX = offset.x
+            var closestIndex = 0
+            var closestDist = Float.MAX_VALUE
+            for (i in data.indices) {
+                val px = leftPad + i * step
+                val dist = kotlin.math.abs(clickX - px)
+                if (dist < closestDist) {
+                    closestDist = dist
+                    closestIndex = i
+                }
+            }
+            if (closestDist < step / 2f) {
+                onPointClick(closestIndex)
+            }
+        }
+    }) {
         val labelStyle = TextStyle(color = labelColor, fontSize = 10.sp)
         val labelHeight = 14.dp.toPx()
         val chartBottom = size.height - labelHeight - 4.dp.toPx()

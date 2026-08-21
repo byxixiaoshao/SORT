@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut
+        android:shortcutId="quick_note"
+        android:enabled="true"
+        android:icon="@drawable/ic_notification"
+        android:shortcutShortLabel="@string/shortcut_quick_note"
+        android:shortcutLongLabel="@string/shortcut_quick_note_long">
+        <intent
+            android:action="com.bicy.note.action.QUICK_NOTE"
+            android:targetPackage="com.bicy.note"
+            android:targetClass="com.bicy.note.MainActivity" />
+    </shortcut>
+</shortcuts>

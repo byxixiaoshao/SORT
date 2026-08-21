@@ -102,6 +102,7 @@ data class AppSettings(
     val dndEndMinute: Int = 7 * 60,
     val dndRules: List<DndRule> = emptyList(),
     val alarmRules: List<AlarmRule> = emptyList(),
+    val alarmRingtoneUri: String? = null,
     val notificationListening: Boolean = false,
     val reminderEmails: Boolean = true,
     val quickRecordEnabled: Boolean = false,

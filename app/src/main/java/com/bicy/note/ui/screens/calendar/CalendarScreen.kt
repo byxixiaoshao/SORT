@@ -69,6 +69,16 @@ fun CalendarScreen(
         computeFrequency(timestamps, chartMode)
     }
 
+    // 频率图各点对应的日期列表
+    val chartDates = remember(chartMode) {
+        val today = LocalDate.now()
+        when (chartMode) {
+            ChartMode.Day24 -> List(24) { today }
+            ChartMode.Week7 -> (6 downTo 0).map { today.minusDays(it.toLong()) }
+            ChartMode.Month30 -> (29 downTo 0).map { today.minusDays(it.toLong()) }
+        }
+    }
+
     Box(modifier = Modifier.fillMaxSize()) {
         Column(
             modifier = Modifier
@@ -101,6 +111,11 @@ FrequencyChart(
                     .fillMaxWidth()
                     .weight(1f)
                     .padding(top = 8.dp, bottom = 8.dp),
+                onPointClick = { index ->
+                    if (index in chartDates.indices) {
+                        onDateClick(chartDates[index])
+                    }
+                },
             )
         }
     }

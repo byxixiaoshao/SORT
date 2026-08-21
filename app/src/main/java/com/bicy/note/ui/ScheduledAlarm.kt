@@ -95,10 +95,12 @@ object ScheduledAlarm {
     fun fire(context: Context) {
         ensureChannel(context)
 
-        // 播放默认闹钟铃声
-        val ringtone = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
-        if (ringtone != null) {
-            val player = RingtoneManager.getRingtone(context, ringtone)
+        // 播放闹钟铃声（优先使用用户选择的铃声）
+        val settings = NoteRepository.get(context).currentSettings()
+        val ringtoneUri = settings.alarmRingtoneUri?.let { android.net.Uri.parse(it) }
+            ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
+        if (ringtoneUri != null) {
+            val player = RingtoneManager.getRingtone(context, ringtoneUri)
             player?.play()
             // 5 秒后自动停止
             android.os.Handler(context.mainLooper).postDelayed({
@@ -124,12 +126,12 @@ object ScheduledAlarm {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
         val notification = NotificationCompat.Builder(context, ALARM_CHANNEL)
-            .setSmallIcon(R.mipmap.ic_launcher)
+            .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle("闹钟响了")
             .setContentText("点击关闭")
             .setAutoCancel(true)
             .setOngoing(true)
-            .setSound(ringtone)
+            .setSound(ringtoneUri)
             .setVibrate(longArrayOf(0, 2000))
             .addAction(0, "关闭闹钟", dismissPi)
             .build()
@@ -144,7 +146,7 @@ object ScheduledAlarm {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
         NotificationCompat.Builder(context, ALARM_CHANNEL)
-            .setSmallIcon(R.mipmap.ic_launcher)
+            .setSmallIcon(R.drawable.ic_notification)
             .setAutoCancel(true)
             .build()
 

@@ -67,7 +67,7 @@ val LocalSettingsOverlayHost = androidx.compose.runtime.staticCompositionLocalOf
  */
 @OptIn(ExperimentalGraphicsApi::class)
 @Composable
-fun AppNavigation() {
+fun AppNavigation(openQuickNote: Boolean = false) {
     val navController = rememberNavController()
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = backStackEntry?.destination?.route
@@ -77,6 +77,11 @@ fun AppNavigation() {
     var entryToView by remember { mutableStateOf<com.bicy.note.data.model.NoteEntry?>(null) }
     var settingsOverlay by remember { mutableStateOf<(@Composable () -> Unit)?>(null) }
     var settingsOverlayVisible by remember { mutableStateOf(false) }
+
+    // 快捷方式打开随写
+    LaunchedEffect(openQuickNote) {
+        if (openQuickNote) expandedDock = 0
+    }
 
     val configuration = LocalConfiguration.current
     val density = LocalDensity.current

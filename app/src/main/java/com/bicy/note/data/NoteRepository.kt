@@ -588,6 +588,12 @@ class NoteRepository private constructor(private val context: Context) {
         }
     }
 
+    fun updateAlarmRingtone(uri: String?) {
+        updateSettings { settings ->
+            settings.copy(alarmRingtoneUri = uri)
+        }
+    }
+
     fun updateThemePreset(id: String) {
         updateSettings { it.copy(themePreset = id) }
     }

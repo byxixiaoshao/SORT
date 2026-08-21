@@ -187,7 +187,7 @@ object ScheduledDnd {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
         val notification = NotificationCompat.Builder(context, PROMPT_CHANNEL)
-            .setSmallIcon(R.mipmap.ic_launcher)
+            .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle("当前处于「$name」的勿扰时间段")
             .setContentText("立刻勿扰倒计时已结束，是否继续勿扰？")
             .setAutoCancel(true)

@@ -32,7 +32,9 @@ class MainActivity : ComponentActivity() {
         setContent {
             CompositionLocalProvider(LocalRepository provides repository) {
                 寄意Theme {
-                    AppNavigation()
+                    AppNavigation(
+                        openQuickNote = intent?.action == "com.bicy.note.action.QUICK_NOTE",
+                    )
                 }
             }
         }

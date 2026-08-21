@@ -5,8 +5,11 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.media.RingtoneManager
 import android.os.Build
 import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
@@ -127,6 +130,13 @@ fun ClockScreen() {
         ScheduledDnd.arm(context)
         ScheduledAlarm.arm(context)
         refreshInstant()
+    }
+
+    val ringtoneLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        val uri = result.data?.getParcelableExtra<android.net.Uri>(RingtoneManager.EXTRA_RINGTONE_PICKED_URI)
+        repository.updateAlarmRingtone(uri?.toString())
     }
 
     // 监听系统「勿扰状态变化」和「勿扰权限变化」广播：实时同步立刻勿扰开关与权限项
@@ -323,6 +333,23 @@ fun ClockScreen() {
             isExpanded = alarmExpanded,
             onToggle = { alarmExpanded = !alarmExpanded },
         ) {
+            // 铃声选择
+            SettingClickItem(
+                title = "闹钟铃声",
+                value = if (settings.alarmRingtoneUri != null) "已设置" else "系统默认",
+                onClick = {
+                    val intent = Intent(RingtoneManager.ACTION_RINGTONE_PICKER).apply {
+                        putExtra(RingtoneManager.EXTRA_RINGTONE_TYPE, RingtoneManager.TYPE_ALARM)
+                        putExtra(RingtoneManager.EXTRA_RINGTONE_TITLE, "选择闹钟铃声")
+                        putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_SILENT, true)
+                        putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_DEFAULT, true)
+                        settings.alarmRingtoneUri?.let {
+                            putExtra(RingtoneManager.EXTRA_RINGTONE_EXISTING_URI, android.net.Uri.parse(it))
+                        }
+                    }
+                    ringtoneLauncher.launch(intent)
+                },
+            )
             SettingClickItemWithIcon(
                 icon = Icons.Outlined.Add,
                 title = "添加闹钟",

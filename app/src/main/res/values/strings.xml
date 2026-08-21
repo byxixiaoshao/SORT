@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">寄意</string>
+    <string name="shortcut_quick_note">随写</string>
+    <string name="shortcut_quick_note_long">快速记录一条</string>
 </resources>
