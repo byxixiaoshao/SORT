@@ -56,35 +56,37 @@ object ShareImageBuilder {
     }
 
     fun renderWithDateTime(
-        context: Context,
+        context: Context?,
         schema: TemplateSchema,
         dateTime: LocalDateTime,
         entry: NoteEntry,
         images: List<Bitmap>,
         videoCovers: List<Bitmap>,
+        customCanvasHeight: Int? = null,
     ): Bitmap {
         val c = schema.canvas
-        val bitmap = Bitmap.createBitmap(c.width, c.height, Bitmap.Config.ARGB_8888)
+        // 自适应高度：先测量内容高度，再决定画布尺寸
+        val contentHeight = measureContentHeight(schema, dateTime, entry, images, videoCovers, c.width)
+        val canvasH = customCanvasHeight ?: (contentHeight + 80f).toInt().coerceIn(400, c.height)
+
+        val bitmap = Bitmap.createBitmap(c.width, canvasH, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bitmap)
+        val adjustedCanvas = c.copy(height = canvasH)
 
-        // 背景
-        drawBackground(canvas, c)
+        drawBackground(canvas, adjustedCanvas)
+        schema.decorations.forEach { drawDecoration(canvas, it, adjustedCanvas) }
 
-        // 装饰层（zIndex 最低）
-        schema.decorations.forEach { drawDecoration(canvas, it, c) }
-
-        // 节点层
         val sorted = schema.nodes.sortedBy { it.zIndex }
         var autoY = 0f
 
         for (node in sorted) {
             val px = node.x / 100f * c.width
-            val py = if (node.y < 0) autoY else node.y / 100f * c.height
+            val py = if (node.y < 0) autoY else node.y / 100f * canvasH
 
             when (node) {
                 is LayoutNode.TextNode -> {
                     val text = resolveTextPlaceholder(node.content, dateTime.toLocalDate(), entry)
-                    val drawn = drawText(canvas, text, node, px, py, c)
+                    val drawn = drawText(canvas, text, node, px, py, adjustedCanvas)
                     autoY = py + drawn + 8f
                 }
                 is LayoutNode.DateNode -> {
@@ -121,19 +123,19 @@ object ShareImageBuilder {
                 is LayoutNode.ImageNode -> {
                     val bmp = images.firstOrNull()
                     if (bmp != null) {
-                        drawImage(canvas, bmp, node, px, py, c)
+                        drawImage(canvas, bmp, node, px, py, adjustedCanvas)
                     }
                 }
                 is LayoutNode.ImageGridNode -> {
                     val allImages = images + videoCovers
                     val toDraw = allImages.take(node.maxImages)
                     if (toDraw.isNotEmpty()) {
-                        val gridY = drawImageGrid(canvas, toDraw, node, px, py, c)
+                        val gridY = drawImageGrid(canvas, toDraw, node, px, py, adjustedCanvas)
                         autoY = gridY
                     }
                 }
                 is LayoutNode.WatermarkNode -> {
-                    drawWatermark(canvas, node, c)
+                    drawWatermark(canvas, node, adjustedCanvas)
                 }
                 is LayoutNode.SpacerNode -> {
                     autoY = py + node.height
@@ -142,6 +144,65 @@ object ShareImageBuilder {
         }
 
         return bitmap
+    }
+
+    private fun measureContentHeight(
+        schema: TemplateSchema,
+        dateTime: LocalDateTime,
+        entry: NoteEntry,
+        images: List<Bitmap>,
+        videoCovers: List<Bitmap>,
+        canvasWidth: Int,
+    ): Float {
+        var maxY = 0f
+        for (node in schema.nodes) {
+            val py = if (node.y < 0) 0f else node.y / 100f * schema.canvas.height
+            when (node) {
+                is LayoutNode.TextNode -> {
+                    val text = resolveTextPlaceholder(node.content, dateTime.toLocalDate(), entry)
+                    val paint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
+                        textSize = node.fontSize.toFloat()
+                        typeface = if (node.fontWeight >= 700) Typeface.DEFAULT_BOLD else Typeface.DEFAULT
+                    }
+                    val maxW = if (node.width > 0) (node.width / 100f * canvasWidth).toInt()
+                    else (canvasWidth - node.x / 100f * canvasWidth * 2).toInt()
+                    val layout = StaticLayout.Builder.obtain(text, 0, text.length, paint, maxW.coerceAtLeast(1))
+                        .setLineSpacing(0f, 1.2f)
+                        .setIncludePad(false)
+                        .build()
+                    val h = if (node.y < 0) layout.height.toFloat() else py + layout.height
+                    maxY = maxOf(maxY, h)
+                }
+                is LayoutNode.DateNode -> {
+                    val h = py + node.fontSize + 16f
+                    maxY = maxOf(maxY, h)
+                }
+                is LayoutNode.ImageGridNode -> {
+                    val allImages = images + videoCovers
+                    val toDraw = allImages.take(node.maxImages)
+                    if (toDraw.isNotEmpty()) {
+                        val totalW = if (node.width > 0) node.width / 100f * canvasWidth
+                        else canvasWidth - node.x / 100f * canvasWidth * 2
+                        val gap = node.spacing
+                        val cellW = (totalW - gap * (node.columns - 1)) / node.columns
+                        var gridH = 0f
+                        for ((idx, bmp) in toDraw.withIndex()) {
+                            val row = idx / node.columns
+                            val cellH = cellW * bmp.height / bmp.width.toFloat()
+                            gridH = maxOf(gridH, (row + 1) * cellH + row * gap)
+                        }
+                        val h = py + gridH
+                        maxY = maxOf(maxY, h)
+                    }
+                }
+                is LayoutNode.LineNode -> {
+                    val h = py + node.thickness + 16f
+                    maxY = maxOf(maxY, h)
+                }
+                else -> {}
+            }
+        }
+        return maxY
     }
 
     private fun drawBackground(canvas: Canvas, config: CanvasConfig) {

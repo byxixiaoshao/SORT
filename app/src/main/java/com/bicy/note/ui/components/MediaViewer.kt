@@ -73,6 +73,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import com.bicy.note.share.SharePreviewDialog
 import com.bicy.note.data.LocalRepository
 import com.bicy.note.data.NoteRepository
 import com.bicy.note.data.model.MARKER_CIRCLE
@@ -175,6 +176,9 @@ fun NoteDetailSheet(
     var marker by remember(entry) { mutableStateOf(entry.effectiveMarker()) }
     var isEditing by remember { mutableStateOf(false) }
     var editText by remember(entry) { mutableStateOf(entry.text) }
+    var showShareDialog by remember { mutableStateOf(false) }
+    var shareImages by remember { mutableStateOf<List<Bitmap>>(emptyList()) }
+    var shareVideoCovers by remember { mutableStateOf<List<Bitmap>>(emptyList()) }
 
     Box(modifier = Modifier.fillMaxSize()) {
         Box(
@@ -298,38 +302,17 @@ fun NoteDetailSheet(
                                 )
                             }
                             IconButton(onClick = {
-                                // 生成分享图片
+                                // 加载图片并打开分享预览弹窗
                                 scope.launch(Dispatchers.IO) {
-                                    val images = entry.images.mapNotNull { name ->
+                                    val imgs = entry.images.mapNotNull { name ->
                                         com.bicy.note.share.ShareImageBuilder.loadBitmap(context, "notes/image_and_video", name, maxSize = 2400)
                                     }
-                                    val videoCovers = entry.videos.mapNotNull { name ->
+                                    val covers = entry.videos.mapNotNull { name ->
                                         com.bicy.note.share.ShareImageBuilder.loadBitmap(context, "notes/image_and_video", name, maxSize = 2400)
                                     }
-                                    val bitmap = com.bicy.note.share.ShareImageBuilder.render(
-                                        context = context,
-                                        schema = com.bicy.note.share.BuiltinTemplates.minimal,
-                                        date = date,
-                                        entry = entry,
-                                        images = images,
-                                        videoCovers = videoCovers,
-                                    )
-                                    // 保存到缓存目录
-                                    val file = java.io.File(context.cacheDir, "share_${System.currentTimeMillis()}.png")
-                                    file.outputStream().use { out ->
-                                        bitmap.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, out)
-                                    }
-                                    bitmap.recycle()
-                                    // 分享图片
-                                    val uri = androidx.core.content.FileProvider.getUriForFile(
-                                        context, "${context.packageName}.fileprovider", file
-                                    )
-                                    val intent = Intent(Intent.ACTION_SEND).apply {
-                                        putExtra(Intent.EXTRA_STREAM, uri)
-                                        type = "image/png"
-                                        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                                    }
-                                    context.startActivity(Intent.createChooser(intent, "分享记录图片"))
+                                    shareImages = imgs
+                                    shareVideoCovers = covers
+                                    showShareDialog = true
                                 }
                             }) {
                                 Icon(
@@ -400,6 +383,16 @@ fun NoteDetailSheet(
     val full = fullImage
     if (full != null) {
         FullImageDialog(name = full, context = context, onDismiss = { fullImage = null })
+    }
+
+    if (showShareDialog) {
+        SharePreviewDialog(
+            date = date,
+            entry = entry,
+            images = shareImages,
+            videoCovers = shareVideoCovers,
+            onDismiss = { showShareDialog = false },
+        )
     }
 }
 
