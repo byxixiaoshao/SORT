@@ -2,7 +2,6 @@ package com.bicy.note.share
 
 import android.content.Intent
 import android.graphics.Bitmap
-import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -31,18 +30,24 @@ import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -52,6 +57,7 @@ import java.io.File
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.LocalTime
+import kotlin.math.roundToInt
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -65,9 +71,17 @@ fun SharePreviewDialog(
     val context = LocalContext.current
     var engines by remember { mutableStateOf(TemplateRegistry.getAll()) }
     var selectedEngine by remember { mutableStateOf(engines.firstOrNull()) }
-    var bgColor by remember { mutableStateOf(0xFFFAFAFA) }
-    var textColor by remember { mutableStateOf(0xFF1A1A1A) }
+
+    // 颜色用 HSL 滑块控制
+    var bgHue by remember { mutableFloatStateOf(0f) }       // 0~360
+    var bgSat by remember { mutableFloatStateOf(0f) }       // 0~1 (0=灰阶)
+    var bgLit by remember { mutableFloatStateOf(0.96f) }    // 0~1
+    var textHue by remember { mutableFloatStateOf(0f) }
+    var textSat by remember { mutableFloatStateOf(0f) }
+    var textLit by remember { mutableFloatStateOf(0.1f) }
+
     var showWatermark by remember { mutableStateOf(true) }
+    var watermarkText by remember { mutableStateOf("来自「寄意」笔记") }
     var previewBitmap by remember { mutableStateOf<Bitmap?>(null) }
     var showJsonEditor by remember { mutableStateOf(false) }
     var jsonInput by remember { mutableStateOf("") }
@@ -76,24 +90,10 @@ fun SharePreviewDialog(
     val time = try { LocalTime.parse(entry.time) } catch (_: Exception) { LocalTime.NOON }
     val dateTime = LocalDateTime.of(date, time)
 
-    // 预设背景色
-    val bgPresets = listOf(
-        0xFFFAFAFA to "浅灰",
-        0xFFFFFFFF to "纯白",
-        0xFFF5F5DC to "米色",
-        0xFF1A1A1A to "深黑",
-        0xFF263238 to "深蓝灰",
-        0xFFFFF8E1 to "暖黄",
-    )
-    val textPresets = listOf(
-        0xFF1A1A1A to "黑",
-        0xFFFFFFFF to "白",
-        0xFF5D4037 to "棕",
-        0xFF1565C0 to "蓝",
-    )
+    val bgColor = hslToArgb(bgHue, bgSat, bgLit)
+    val textColor = hslToArgb(textHue, textSat, textLit)
 
-    // 实时预览渲染
-    LaunchedEffect(selectedEngine, bgColor, textColor, showWatermark) {
+    LaunchedEffect(selectedEngine, bgColor, textColor, showWatermark, watermarkText) {
         previewBitmap = selectedEngine?.render(
             context = context,
             dateTime = dateTime,
@@ -104,52 +104,57 @@ fun SharePreviewDialog(
                 bgColor = bgColor,
                 textColor = textColor,
                 showWatermark = showWatermark,
+                watermarkText = watermarkText,
             ),
         )
     }
 
-    Surface(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.scrim.copy(alpha = 0.5f)),
-    ) {
-        Column(
+    Column(modifier = Modifier.fillMaxSize()) {
+        // ═══════════ 上方：标题 + 预览 ═══════════
+        Row(
             modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp)
-                .verticalScroll(rememberScrollState()),
-            horizontalAlignment = Alignment.CenterHorizontally,
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text("分享预览", style = MaterialTheme.typography.titleMedium)
-                IconButton(onClick = onDismiss) {
-                    Icon(Icons.Outlined.Close, contentDescription = "关闭")
-                }
+            Text("分享预览", style = MaterialTheme.typography.titleMedium)
+            IconButton(onClick = onDismiss, modifier = Modifier.size(32.dp)) {
+                Icon(Icons.Outlined.Close, contentDescription = "关闭", modifier = Modifier.size(20.dp))
             }
+        }
 
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // 预览图
-            val preview = previewBitmap
-            if (preview != null) {
+        // 预览图（固定高度，不可滚动）
+        val preview = previewBitmap
+        if (preview != null) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
+                    .padding(horizontal = 16.dp),
+                contentAlignment = Alignment.Center,
+            ) {
                 Image(
                     bitmap = preview.asImageBitmap(),
                     contentDescription = "预览",
                     modifier = Modifier
-                        .fillMaxWidth(0.85f)
+                        .fillMaxWidth(0.8f)
                         .aspectRatio(preview.width.toFloat() / preview.height)
                         .clip(RoundedCornerShape(12.dp))
                         .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(12.dp)),
                     contentScale = ContentScale.Fit,
                 )
             }
+        }
 
-            Spacer(modifier = Modifier.height(16.dp))
-
+        // ═══════════ 中间：配置项（可滚动） ═══════════
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1.2f)
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 16.dp),
+        ) {
             // 模板选择
             Text("模板", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(modifier = Modifier.height(6.dp))
@@ -170,13 +175,12 @@ fun SharePreviewDialog(
                     ) {
                         Text(
                             engine.name,
-                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                            style = MaterialTheme.typography.bodyMedium,
+                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
+                            style = MaterialTheme.typography.bodySmall,
                             color = if (selected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface,
                         )
                     }
                 }
-                // 添加自定义模板按钮
                 Surface(
                     modifier = Modifier
                         .padding(bottom = 6.dp)
@@ -185,188 +189,255 @@ fun SharePreviewDialog(
                         .clickable { showJsonEditor = true },
                     color = MaterialTheme.colorScheme.surface,
                 ) {
-                    Text(
-                        "+ 添加",
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
+                    Text("+ 添加", modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
+                        style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
-            // 背景色
+            // 背景色滑块
             Text("背景色", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Spacer(modifier = Modifier.height(6.dp))
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                bgPresets.forEach { (hex, _) ->
-                    val selected = bgColor == hex
-                    Box(
-                        modifier = Modifier
-                            .padding(bottom = 6.dp)
-                            .size(40.dp)
-                            .clip(CircleShape)
-                            .background(androidx.compose.ui.graphics.Color(android.graphics.Color.argb(
-                                ((hex shr 24) and 0xFF).toInt(),
-                                ((hex shr 16) and 0xFF).toInt(),
-                                ((hex shr 8) and 0xFF).toInt(),
-                                (hex and 0xFF).toInt(),
-                            )))
-                            .then(if (selected) Modifier.border(3.dp, MaterialTheme.colorScheme.primary, CircleShape)
-                            else Modifier.border(1.dp, MaterialTheme.colorScheme.outlineVariant, CircleShape))
-                            .clickable { bgColor = hex },
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        if (selected) Text("✓", color = if (hex == 0xFF1A1A1A || hex == 0xFF263238) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.onSurface)
-                    }
-                }
-            }
+            Spacer(modifier = Modifier.height(4.dp))
+            ColorSlider(
+                hue = bgHue, onHueChange = { bgHue = it },
+                sat = bgSat, onSatChange = { bgSat = it },
+                lit = bgLit, onLitChange = { bgLit = it },
+                previewColor = Color.hsl(bgHue, bgSat, bgLit),
+            )
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
-            // 文字颜色
+            // 文字色滑块
             Text("文字颜色", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Spacer(modifier = Modifier.height(6.dp))
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                textPresets.forEach { (hex, _) ->
-                    val selected = textColor == hex
-                    Box(
-                        modifier = Modifier
-                            .padding(bottom = 6.dp)
-                            .size(40.dp)
-                            .clip(CircleShape)
-                            .background(androidx.compose.ui.graphics.Color(android.graphics.Color.argb(
-                                ((hex shr 24) and 0xFF).toInt(),
-                                ((hex shr 16) and 0xFF).toInt(),
-                                ((hex shr 8) and 0xFF).toInt(),
-                                (hex and 0xFF).toInt(),
-                            )))
-                            .then(if (selected) Modifier.border(3.dp, MaterialTheme.colorScheme.primary, CircleShape)
-                            else Modifier.border(1.dp, MaterialTheme.colorScheme.outlineVariant, CircleShape))
-                            .clickable { textColor = hex },
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        if (selected) Text("✓", color = if (hex == 0xFF1A1A1A) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.onSurface)
-                    }
-                }
-            }
+            Spacer(modifier = Modifier.height(4.dp))
+            ColorSlider(
+                hue = textHue, onHueChange = { textHue = it },
+                sat = textSat, onSatChange = { textSat = it },
+                lit = textLit, onLitChange = { textLit = it },
+                previewColor = Color.hsl(textHue, textSat, textLit),
+            )
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
             // 水印
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                Text("显示水印", style = MaterialTheme.typography.bodyMedium)
-                androidx.compose.material3.Switch(checked = showWatermark, onCheckedChange = { showWatermark = it })
-            }
-
-            Spacer(modifier = Modifier.height(20.dp))
-
-            // 分享按钮
-            TextButton(
-                onClick = {
-                    previewBitmap?.let { bitmap ->
-                        val file = File(context.cacheDir, "share_${System.currentTimeMillis()}.png")
-                        file.outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
-                        val uri = androidx.core.content.FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
-                        context.startActivity(Intent.createChooser(
-                            Intent(Intent.ACTION_SEND).apply {
-                                putExtra(Intent.EXTRA_STREAM, uri)
-                                type = "image/png"
-                                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                            }, "分享记录图片",
-                        ))
-                    }
-                    onDismiss()
-                },
-                modifier = Modifier.fillMaxWidth().height(48.dp),
-                shape = RoundedCornerShape(12.dp),
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
             ) {
-                Icon(Icons.Outlined.Share, contentDescription = null, modifier = Modifier.size(20.dp))
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("分享图片")
+                Text("水印", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Switch(checked = showWatermark, onCheckedChange = { showWatermark = it })
             }
+            if (showWatermark) {
+                Spacer(modifier = Modifier.height(6.dp))
+                OutlinedTextField(
+                    value = watermarkText,
+                    onValueChange = { watermarkText = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    placeholder = { Text("输入水印文字") },
+                )
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+        }
+
+        // ═══════════ 下方：分享按钮（固定） ═══════════
+        TextButton(
+            onClick = {
+                previewBitmap?.let { bitmap ->
+                    val file = File(context.cacheDir, "share_${System.currentTimeMillis()}.png")
+                    file.outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
+                    val uri = androidx.core.content.FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
+                    context.startActivity(Intent.createChooser(
+                        Intent(Intent.ACTION_SEND).apply {
+                            putExtra(Intent.EXTRA_STREAM, uri)
+                            type = "image/png"
+                            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                        }, "分享记录图片",
+                    ))
+                }
+                onDismiss()
+            },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 8.dp)
+                .height(48.dp),
+            shape = RoundedCornerShape(12.dp),
+        ) {
+            Icon(Icons.Outlined.Share, contentDescription = null, modifier = Modifier.size(20.dp))
+            Spacer(modifier = Modifier.width(8.dp))
+            Text("分享图片")
         }
     }
 
     // JSON 模板编辑器弹窗
     if (showJsonEditor) {
-        Surface(
+        JsonEditorOverlay(
+            jsonInput = jsonInput,
+            onJsonChange = { jsonInput = it; jsonError = null },
+            jsonError = jsonError,
+            onFillExample = { jsonInput = EXAMPLE_JSON.trimIndent() },
+            onConfirm = {
+                val template = JsonTemplate.fromJson(jsonInput)
+                if (template != null) {
+                    TemplateRegistry.register(template)
+                    engines = TemplateRegistry.getAll()
+                    selectedEngine = template
+                    showJsonEditor = false
+                } else {
+                    jsonError = "JSON 解析失败，请检查格式"
+                }
+            },
+            onDismiss = { showJsonEditor = false },
+        )
+    }
+}
+
+@Composable
+private fun ColorSlider(
+    hue: Float, onHueChange: (Float) -> Unit,
+    sat: Float, onSatChange: (Float) -> Unit,
+    lit: Float, onLitChange: (Float) -> Unit,
+    previewColor: Color,
+) {
+    Column {
+        // 色相滑块 0~360
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text("色相", style = MaterialTheme.typography.bodySmall, modifier = Modifier.width(36.dp))
+            Slider(
+                value = hue,
+                onValueChange = { onHueChange(it) },
+                valueRange = 0f..360f,
+                modifier = Modifier.weight(1f),
+                colors = SliderDefaults.colors(
+                    thumbColor = previewColor,
+                    activeTrackColor = Color.hsl(hue, 1f, 0.5f),
+                ),
+            )
+            Text("${hue.roundToInt()}°", style = MaterialTheme.typography.bodySmall, modifier = Modifier.width(36.dp))
+        }
+        // 饱和度滑块 0~1
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text("饱和", style = MaterialTheme.typography.bodySmall, modifier = Modifier.width(36.dp))
+            Slider(
+                value = sat,
+                onValueChange = { onSatChange(it) },
+                valueRange = 0f..1f,
+                modifier = Modifier.weight(1f),
+                colors = SliderDefaults.colors(
+                    thumbColor = previewColor,
+                    activeTrackColor = Color.hsl(hue, 1f, 0.5f),
+                ),
+            )
+            Text("${(sat * 100).roundToInt()}%", style = MaterialTheme.typography.bodySmall, modifier = Modifier.width(36.dp))
+        }
+        // 明度滑块 0~1
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text("明度", style = MaterialTheme.typography.bodySmall, modifier = Modifier.width(36.dp))
+            Slider(
+                value = lit,
+                onValueChange = { onLitChange(it) },
+                valueRange = 0f..1f,
+                modifier = Modifier.weight(1f),
+                colors = SliderDefaults.colors(
+                    thumbColor = previewColor,
+                    activeTrackColor = Color.hsl(hue, sat, 0.5f),
+                ),
+            )
+            Text("${(lit * 100).roundToInt()}%", style = MaterialTheme.typography.bodySmall, modifier = Modifier.width(36.dp))
+        }
+        // 预览色块
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(24.dp)
+                .clip(RoundedCornerShape(6.dp))
+                .background(previewColor)
+                .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(6.dp)),
+        )
+    }
+}
+
+@Composable
+private fun JsonEditorOverlay(
+    jsonInput: String,
+    onJsonChange: (String) -> Unit,
+    jsonError: String?,
+    onFillExample: () -> Unit,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    Surface(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.scrim.copy(alpha = 0.7f))
+            .clickable(onClick = onDismiss),
+    ) {
+        Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(MaterialTheme.colorScheme.scrim.copy(alpha = 0.7f))
-                .clickable { showJsonEditor = false },
+                .padding(24.dp)
+                .verticalScroll(rememberScrollState()),
         ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(24.dp)
-                    .verticalScroll(rememberScrollState()),
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
             ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Text("添加自定义模板", style = MaterialTheme.typography.titleMedium)
-                    IconButton(onClick = { showJsonEditor = false }) {
-                        Icon(Icons.Outlined.Close, contentDescription = "关闭")
-                    }
+                Text("添加自定义模板", style = MaterialTheme.typography.titleMedium)
+                IconButton(onClick = onDismiss, modifier = Modifier.size(32.dp)) {
+                    Icon(Icons.Outlined.Close, contentDescription = "关闭", modifier = Modifier.size(20.dp))
                 }
+            }
 
-                Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(12.dp))
+            Text("粘贴模板 JSON：", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Spacer(modifier = Modifier.height(8.dp))
 
-                Text(
-                    text = "粘贴模板 JSON：",
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                Spacer(modifier = Modifier.height(8.dp))
+            OutlinedTextField(
+                value = jsonInput,
+                onValueChange = onJsonChange,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(240.dp),
+                placeholder = { Text("{ ... }", style = MaterialTheme.typography.bodySmall) },
+                textStyle = MaterialTheme.typography.bodySmall,
+                isError = jsonError != null,
+                supportingText = jsonError?.let { { Text(it, color = MaterialTheme.colorScheme.error) } },
+            )
 
-                androidx.compose.material3.OutlinedTextField(
-                    value = jsonInput,
-                    onValueChange = { jsonInput = it; jsonError = null },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(240.dp),
-                    placeholder = { Text("{ ... }", style = MaterialTheme.typography.bodySmall) },
-                    textStyle = MaterialTheme.typography.bodySmall,
-                    isError = jsonError != null,
-                    supportingText = jsonError?.let { { Text(it, color = MaterialTheme.colorScheme.error) } },
-                )
+            Spacer(modifier = Modifier.height(12.dp))
 
-                Spacer(modifier = Modifier.height(12.dp))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                ) {
-                    TextButton(
-                        onClick = {
-                            jsonInput = EXAMPLE_JSON.trimIndent()
-                        },
-                        modifier = Modifier.weight(1f),
-                    ) { Text("填入示例") }
-
-                    TextButton(
-                        onClick = {
-                            val template = JsonTemplate.fromJson(jsonInput)
-                            if (template != null) {
-                                TemplateRegistry.register(template)
-                                engines = TemplateRegistry.getAll()
-                                selectedEngine = template
-                                showJsonEditor = false
-                            } else {
-                                jsonError = "JSON 解析失败，请检查格式"
-                            }
-                        },
-                        modifier = Modifier.weight(1f),
-                    ) { Text("确认添加") }
-                }
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                TextButton(onClick = onFillExample, modifier = Modifier.weight(1f)) { Text("填入示例") }
+                TextButton(onClick = onConfirm, modifier = Modifier.weight(1f)) { Text("确认添加") }
             }
         }
     }
 }
+
+/** HSL → ARGB Long */
+private fun hslToArgb(h: Float, s: Float, l: Float): Long {
+    val c = (1f - kotlin.math.abs(2f * l - 1f)) * s
+    val x = c * (1f - kotlin.math.abs((h / 60f) % 2f - 1f))
+    val m = l - c / 2f
+    val (r, g, b) = when {
+        h < 60 -> tripleOf(c, x, 0f)
+        h < 120 -> tripleOf(x, c, 0f)
+        h < 180 -> tripleOf(0f, c, x)
+        h < 240 -> tripleOf(0f, x, c)
+        h < 300 -> tripleOf(x, 0f, c)
+        else -> tripleOf(c, 0f, x)
+    }
+    val ri = ((r + m) * 255).toInt().coerceIn(0, 255)
+    val gi = ((g + m) * 255).toInt().coerceIn(0, 255)
+    val bi = ((b + m) * 255).toInt().coerceIn(0, 255)
+    return (0xFF.toLong() shl 24) or (ri.toLong() shl 16) or (gi.toLong() shl 8) or bi.toLong()
+}
+
+private fun tripleOf(a: Float, b: Float, c: Float) = Triple(a, b, c)
 
 private val EXAMPLE_JSON = """
 {
@@ -379,9 +450,9 @@ private val EXAMPLE_JSON = """
   },
   "nodes": [
     { "type": "DateNode", "id": "date", "x": 8, "y": 5, "fontSize": 32, "color": 2301546496 },
-    { "type": "TextNode", "id": "text", "x": 8, "y": 12, "width": 84, "fontSize": 48, "color": 4278190080, "content": "{{text}}" },
-    { "type": "ImageGridNode", "id": "img", "x": 8, "y": 60, "width": 84, "columns": 2, "spacing": 16, "borderRadius": 12, "maxImages": 6 },
-    { "type": "WatermarkNode", "id": "wm", "x": 50, "y": 95, "fontSize": 24, "color": 3086721395, "text": "来自「寄意」笔记" }
+    { "type": "TextNode", "id": "text", "x": 8, "y": -1, "width": 84, "fontSize": 48, "color": 4278190080, "content": "{{text}}" },
+    { "type": "ImageGridNode", "id": "img", "x": 8, "y": -1, "width": 84, "columns": 2, "spacing": 16, "borderRadius": 12, "maxImages": 6 },
+    { "type": "WatermarkNode", "id": "wm", "x": 50, "y": -1, "fontSize": 24, "color": 3086721395, "text": "来自「寄意」笔记" }
   ],
   "decorations": [
     { "type": "BorderDecoration", "id": "b", "color": 4280825704, "thickness": 2, "cornerRadius": 20 }
