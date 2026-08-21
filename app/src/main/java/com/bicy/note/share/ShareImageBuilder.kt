@@ -76,10 +76,9 @@ object ShareImageBuilder {
         drawBackground(canvas, adjustedCanvas)
         schema.decorations.forEach { drawDecoration(canvas, it, adjustedCanvas) }
 
-        val sorted = schema.nodes.sortedBy { it.zIndex }
         var autoY = 0f
 
-        for (node in sorted) {
+        for (node in schema.nodes) {
             val px = node.x / 100f * c.width
             val py = if (node.y < 0) autoY else node.y / 100f * canvasH
 

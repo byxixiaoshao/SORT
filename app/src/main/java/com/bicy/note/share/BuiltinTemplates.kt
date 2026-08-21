@@ -19,6 +19,9 @@ object BuiltinTemplates {
                 id = "divider1", x = 8f, y = -1f,
                 width = 84f, thickness = 1f, color = 0xFFE0E0E0,
             ),
+            LayoutNode.SpacerNode(
+                id = "sp0", x = 0f, y = -1f, height = 20f,
+            ),
             LayoutNode.TextNode(
                 id = "text", x = 8f, y = -1f,
                 width = 84f, fontSize = 44,
@@ -26,8 +29,7 @@ object BuiltinTemplates {
                 content = "{{text}}",
             ),
             LayoutNode.SpacerNode(
-                id = "spacer", x = 0f, y = -1f,
-                height = 24f,
+                id = "sp1", x = 0f, y = -1f, height = 28f,
             ),
             LayoutNode.ImageGridNode(
                 id = "images", x = 8f, y = -1f,
@@ -36,8 +38,7 @@ object BuiltinTemplates {
                 maxImages = 9,
             ),
             LayoutNode.SpacerNode(
-                id = "spacer2", x = 0f, y = -1f,
-                height = 40f,
+                id = "sp2", x = 0f, y = -1f, height = 36f,
             ),
             LayoutNode.WatermarkNode(
                 id = "watermark", x = 50f, y = -1f,
@@ -67,6 +68,9 @@ object BuiltinTemplates {
                 id = "date", x = 10f, y = 5f,
                 fontSize = 28, color = 0xFF999999,
             ),
+            LayoutNode.SpacerNode(
+                id = "sp0", x = 0f, y = -1f, height = 16f,
+            ),
             LayoutNode.TextNode(
                 id = "text", x = 10f, y = -1f,
                 width = 80f, fontSize = 44,
@@ -75,16 +79,14 @@ object BuiltinTemplates {
                 content = "{{text}}",
             ),
             LayoutNode.SpacerNode(
-                id = "spacer", x = 0f, y = -1f,
-                height = 16f,
+                id = "sp1", x = 0f, y = -1f, height = 20f,
             ),
             LayoutNode.LineNode(
                 id = "divider", x = 10f, y = -1f,
                 width = 80f, thickness = 1f, color = 0xFFDDDDDD,
             ),
             LayoutNode.SpacerNode(
-                id = "spacer2", x = 0f, y = -1f,
-                height = 16f,
+                id = "sp2", x = 0f, y = -1f, height = 20f,
             ),
             LayoutNode.ImageGridNode(
                 id = "images", x = 10f, y = -1f,
@@ -93,8 +95,7 @@ object BuiltinTemplates {
                 maxImages = 6,
             ),
             LayoutNode.SpacerNode(
-                id = "spacer3", x = 0f, y = -1f,
-                height = 32f,
+                id = "sp3", x = 0f, y = -1f, height = 28f,
             ),
             LayoutNode.WatermarkNode(
                 id = "watermark", x = 50f, y = -1f,
@@ -126,37 +127,25 @@ object BuiltinTemplates {
                 spacing = 0f, borderRadius = 0f,
                 maxImages = 1,
             ),
-            LayoutNode.SpacerNode(
-                id = "spacer", x = 0f, y = -1f,
-                height = 32f,
-            ),
             LayoutNode.TextNode(
-                id = "text", x = 8f, y = -1f,
-                width = 84f, fontSize = 52,
+                id = "text", x = 8f, y = 55f,
+                width = 84f, fontSize = 56,
                 color = 0xFFFFFFFF, fontWeight = 700,
                 maxLines = 10,
                 content = "{{text}}",
             ),
-            LayoutNode.SpacerNode(
-                id = "spacer2", x = 0f, y = -1f,
-                height = 40f,
-            ),
             LayoutNode.LineNode(
-                id = "accent", x = 8f, y = -1f,
+                id = "accent", x = 8f, y = 90f,
                 width = 20f, thickness = 4f,
                 color = 0xFFD4AF37,
             ),
             LayoutNode.DateNode(
-                id = "date", x = 8f, y = -1f,
-                fontSize = 26, color = 0xFF888888,
-            ),
-            LayoutNode.SpacerNode(
-                id = "spacer3", x = 0f, y = -1f,
-                height = 24f,
+                id = "date", x = 8f, y = 92f,
+                fontSize = 28, color = 0xFF888888,
             ),
             LayoutNode.WatermarkNode(
-                id = "watermark", x = 50f, y = -1f,
-                fontSize = 22, color = 0xFF666666,
+                id = "watermark", x = 50f, y = 97f,
+                fontSize = 24, color = 0xFF666666,
                 text = "寄意",
             ),
         ),
