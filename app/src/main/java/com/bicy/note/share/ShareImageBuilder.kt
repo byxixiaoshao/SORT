@@ -97,7 +97,7 @@ object CanvasRenderer {
                 is LayoutNode.TextNode -> {
                     val text = resolveTextPlaceholder(node.content, dateTime.toLocalDate(), entry)
                     val drawn = drawText(canvas, text, node, px, py, adjustedCanvas)
-                    autoY = py + drawn + 20f
+                    autoY = py + drawn + 40f
                 }
                 is LayoutNode.DateNode -> {
                     val text = dateTime.format(DateTimeFormatter.ofPattern(node.format))
@@ -106,7 +106,7 @@ object CanvasRenderer {
                         color = node.color.toInt()
                     }
                     canvas.drawText(text, px, py + node.fontSize, paint)
-                    autoY = py + node.fontSize + 24f
+                    autoY = py + node.fontSize + 30f
                 }
                 is LayoutNode.MarkerNode -> {
                     val marker = entry.effectiveMarker()
@@ -128,7 +128,7 @@ object CanvasRenderer {
                     }
                     val lineW = if (node.width > 0) node.width / 100f * c.width else c.width.toFloat()
                     canvas.drawLine(px, py, px + lineW, py, paint)
-                    autoY = py + node.thickness + 16f
+                    autoY = py + node.thickness + 30f
                 }
                 is LayoutNode.ImageNode -> {
                     val bmp = images.firstOrNull()
