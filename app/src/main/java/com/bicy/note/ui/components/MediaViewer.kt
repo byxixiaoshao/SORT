@@ -190,29 +190,30 @@ fun NoteDetailSheet(
                 tonalElevation = 8.dp,
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
-                    // 头部一行：日期时间 + 标记切换 + 编辑/复制/关闭
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(
-                                text = "${date.format(monthDayFormatter)} ${entry.time}",
-                                style = MaterialTheme.typography.titleMedium,
+                    // 第一行：日期时间 + 标记图标 + 标记切换
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Text(
+                            text = "${date.format(monthDayFormatter)} ${entry.time}",
+                            style = MaterialTheme.typography.titleMedium,
+                        )
+                        if (marker != MARKER_CIRCLE) {
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Icon(
+                                imageVector = markerIcon(marker),
+                                contentDescription = when (marker) {
+                                    MARKER_STAR -> "临时标记"
+                                    else -> "收藏标记"
+                                },
+                                tint = if (marker == MARKER_STAR) {
+                                    MaterialTheme.colorScheme.tertiary
+                                } else {
+                                    MaterialTheme.colorScheme.error
+                                },
+                                modifier = Modifier.size(16.dp),
                             )
-                            if (marker != MARKER_CIRCLE) {
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Icon(
-                                    imageVector = markerIcon(marker),
-                                    contentDescription = when (marker) {
-                                        MARKER_STAR -> "临时标记"
-                                        else -> "收藏标记"
-                                    },
-                                    tint = if (marker == MARKER_STAR) {
-                                        MaterialTheme.colorScheme.tertiary
-                                    } else {
-                                        MaterialTheme.colorScheme.error
-                                    },
-                                    modifier = Modifier.size(16.dp),
-                                )
-                            }
                         }
                         Spacer(modifier = Modifier.weight(1f))
                         // 标记切换
@@ -254,8 +255,13 @@ fun NoteDetailSheet(
                                 }
                             }
                         }
-                        Spacer(modifier = Modifier.width(4.dp))
-                        // 编辑/保存按钮
+                    }
+                    // 第二行：编辑/复制/分享/关闭
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.End,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
                         if (entry.text.isNotEmpty()) {
                             IconButton(onClick = {
                                 if (isEditing) {
@@ -272,7 +278,6 @@ fun NoteDetailSheet(
                                     modifier = Modifier.size(20.dp),
                                 )
                             }
-                            // 复制按钮
                             IconButton(onClick = {
                                 val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
                                 val clip = ClipData.newPlainText("记录内容", entry.text)
@@ -286,7 +291,6 @@ fun NoteDetailSheet(
                                     modifier = Modifier.size(20.dp),
                                 )
                             }
-                            // 分享按钮
                             IconButton(onClick = {
                                 val sendIntent = Intent(Intent.ACTION_SEND).apply {
                                     putExtra(Intent.EXTRA_TEXT, entry.text)
