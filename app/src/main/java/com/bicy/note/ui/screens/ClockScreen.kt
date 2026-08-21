@@ -111,8 +111,8 @@ fun ClockScreen() {
     var accessGranted by remember { mutableStateOf(SystemDndManager.isAccessGranted(context)) }
     var instantActive by remember { mutableStateOf(ScheduledDnd.instantUntil(context) > System.currentTimeMillis()) }
     var pendingDnd by remember { mutableStateOf(false) }
-    var dndExpanded by remember { mutableStateOf(true) }
-    var alarmExpanded by remember { mutableStateOf(true) }
+    var dndExpanded by remember { mutableStateOf(false) }
+    var alarmExpanded by remember { mutableStateOf(false) }
 
     fun refreshInstant() {
         instantActive = ScheduledDnd.instantUntil(context) > System.currentTimeMillis()
@@ -474,7 +474,10 @@ private fun DndRuleDialog(
                 singleLine = true,
             )
             // 星期选择：点亮=当天生效（1=周一 .. 7=周日）
-            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceEvenly,
+            ) {
                 for (d in 1..7) {
                     DayButton(
                         label = weekdayLabels[d - 1],
@@ -750,7 +753,10 @@ private fun AlarmRuleDialog(
                 singleLine = true,
             )
             // 星期选择
-            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceEvenly,
+            ) {
                 for (d in 1..7) {
                     AlarmDayButton(
                         label = weekdayLabels[d - 1],
