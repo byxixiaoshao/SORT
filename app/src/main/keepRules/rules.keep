@@ -1,0 +1,17 @@
+# Add project specific R8 rules here.
+# AGP will combine all keep rule files in src/main/keepRules to pass to R8
+#
+# For more details, see
+#   https://d.android.com/r/tools/r8/keep-rules
+
+# kotlinx.serialization：JSON 存储依赖编译期生成的序列化器，
+# 混淆后需要通过 Companion.serializer() 反射加载，必须保留。
+-keepattributes *Annotation*, InnerClasses
+
+-keep,includedescriptorclasses class com.bicy.note.data.model.**$$serializer { *; }
+-keepclassmembers class com.bicy.note.data.model.** {
+    *** Companion;
+}
+-keepclasseswithmembers class com.bicy.note.data.model.** {
+    kotlinx.serialization.KSerializer serializer(...);
+}

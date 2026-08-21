@@ -1,0 +1,26 @@
+*.iml
+.gradle
+/local.properties
+/.idea
+.DS_Store
+/build
+/captures
+.externalNativeBuild
+.cxx
+local.properties
+.kotlin
+
+# 签名文件
+*.jks
+*.keystore
+
+# 构建产物
+*.apk
+*.aab
+*.ap_
+
+# 设计稿/临时文件
+*.svg
+任务.txt
+error.txt
+*.log
