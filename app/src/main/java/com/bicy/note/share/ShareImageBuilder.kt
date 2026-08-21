@@ -164,9 +164,11 @@ object CanvasRenderer {
         videoCovers: List<Bitmap>,
         canvasWidth: Int,
     ): Float {
-        var maxY = 0f
+        var autoY = 0f
+
         for (node in schema.nodes) {
-            val py = if (node.y < 0) 0f else node.y / 100f * schema.canvas.height
+            val py = if (node.y < 0) autoY else node.y / 100f * schema.canvas.height
+
             when (node) {
                 is LayoutNode.TextNode -> {
                     val text = resolveTextPlaceholder(node.content, dateTime.toLocalDate(), entry)
@@ -180,12 +182,13 @@ object CanvasRenderer {
                         .setLineSpacing(0f, 1.2f)
                         .setIncludePad(false)
                         .build()
-                    val h = if (node.y < 0) layout.height.toFloat() else py + layout.height
-                    maxY = maxOf(maxY, h)
+                    autoY = py + layout.height + 40f
                 }
                 is LayoutNode.DateNode -> {
-                    val h = py + node.fontSize + 16f
-                    maxY = maxOf(maxY, h)
+                    autoY = py + node.fontSize + 30f
+                }
+                is LayoutNode.LineNode -> {
+                    autoY = py + node.thickness + 30f
                 }
                 is LayoutNode.ImageGridNode -> {
                     val allImages = images + videoCovers
@@ -201,18 +204,16 @@ object CanvasRenderer {
                             val cellH = cellW * bmp.height / bmp.width.toFloat()
                             gridH = maxOf(gridH, (row + 1) * cellH + row * gap)
                         }
-                        val h = py + gridH
-                        maxY = maxOf(maxY, h)
+                        autoY = py + gridH
                     }
                 }
-                is LayoutNode.LineNode -> {
-                    val h = py + node.thickness + 16f
-                    maxY = maxOf(maxY, h)
+                is LayoutNode.SpacerNode -> {
+                    autoY = py + node.height
                 }
                 else -> {}
             }
         }
-        return maxY
+        return autoY
     }
 
     private fun drawBackground(canvas: Canvas, config: CanvasConfig) {
