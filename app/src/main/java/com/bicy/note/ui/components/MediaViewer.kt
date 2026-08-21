@@ -301,10 +301,10 @@ fun NoteDetailSheet(
                                 // 生成分享图片
                                 scope.launch(Dispatchers.IO) {
                                     val images = entry.images.mapNotNull { name ->
-                                        com.bicy.note.share.ShareImageBuilder.loadBitmap(context, "notes/image_and_video", name)
+                                        com.bicy.note.share.ShareImageBuilder.loadBitmap(context, "notes/image_and_video", name, maxSize = 2400)
                                     }
                                     val videoCovers = entry.videos.mapNotNull { name ->
-                                        com.bicy.note.share.ShareImageBuilder.loadBitmap(context, "notes/image_and_video", name, maxSize = 960)
+                                        com.bicy.note.share.ShareImageBuilder.loadBitmap(context, "notes/image_and_video", name, maxSize = 2400)
                                     }
                                     val bitmap = com.bicy.note.share.ShareImageBuilder.render(
                                         context = context,

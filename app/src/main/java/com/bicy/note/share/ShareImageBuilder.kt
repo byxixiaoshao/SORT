@@ -225,15 +225,17 @@ object ShareImageBuilder {
         val gap = node.spacing
         val cellW = (totalW - gap * (node.columns - 1)) / node.columns
         val rows = (images.size + node.columns - 1) / node.columns
-        val cellH = cellW
 
         var drawY = y
         for (row in 0 until rows) {
+            var maxRowH = 0f
             for (col in 0 until node.columns) {
                 val idx = row * node.columns + col
                 if (idx >= images.size) break
                 val bmp = images[idx]
                 val cellX = x + col * (cellW + gap)
+                val cellH = cellW * bmp.height / bmp.width.toFloat()
+                maxRowH = maxOf(maxRowH, cellH)
 
                 val dest = RectF(cellX, drawY, cellX + cellW, drawY + cellH)
                 if (node.borderRadius > 0) {
@@ -248,7 +250,7 @@ object ShareImageBuilder {
                     canvas.drawBitmap(bmp, null, dest, null)
                 }
             }
-            drawY += cellH + gap
+            drawY += maxRowH + gap
         }
         return drawY
     }

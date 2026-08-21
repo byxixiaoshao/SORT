@@ -15,10 +15,6 @@ object BuiltinTemplates {
                 id = "date", x = 6f, y = 4f,
                 fontSize = 32, color = 0xFF888888,
             ),
-            LayoutNode.MarkerNode(
-                id = "marker", x = 75f, y = 4.2f,
-                size = 28,
-            ),
             LayoutNode.LineNode(
                 id = "divider1", x = 6f, y = 8f,
                 width = 88f, thickness = 1f, color = 0xFFE0E0E0,
@@ -27,6 +23,7 @@ object BuiltinTemplates {
                 id = "text", x = 6f, y = 10f,
                 width = 88f, fontSize = 48,
                 color = 0xFF1A1A1A, maxLines = 20,
+                content = "{{text}}",
             ),
             LayoutNode.ImageGridNode(
                 id = "images", x = 6f, y = -1f,
@@ -67,6 +64,7 @@ object BuiltinTemplates {
                 width = 80f, fontSize = 52,
                 color = 0xFF222222, fontWeight = 700,
                 maxLines = 20,
+                content = "{{text}}",
             ),
             LayoutNode.LineNode(
                 id = "divider", x = 10f, y = 60f,
@@ -113,6 +111,7 @@ object BuiltinTemplates {
                 width = 84f, fontSize = 56,
                 color = 0xFFFFFFFF, fontWeight = 700,
                 maxLines = 10,
+                content = "{{text}}",
             ),
             LayoutNode.LineNode(
                 id = "accent", x = 8f, y = 90f,
