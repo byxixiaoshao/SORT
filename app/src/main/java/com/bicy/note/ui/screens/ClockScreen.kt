@@ -476,7 +476,7 @@ private fun DndRuleDialog(
             // 星期选择：点亮=当天生效（1=周一 .. 7=周日）
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly,
+                horizontalArrangement = Arrangement.SpaceBetween,
             ) {
                 for (d in 1..7) {
                     DayButton(
@@ -489,6 +489,7 @@ private fun DndRuleDialog(
                                 (days + d).toMutableSet()
                             }
                         },
+                        modifier = Modifier.weight(1f),
                     )
                 }
             }
@@ -538,10 +539,11 @@ private fun DndRuleDialog(
 
 /** 星期按钮：圆形，点亮表示该天生效 */
 @Composable
-private fun DayButton(label: String, selected: Boolean, onClick: () -> Unit) {
+private fun DayButton(label: String, selected: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
     Surface(
         onClick = onClick,
         shape = CircleShape,
+        modifier = modifier.size(36.dp),
         color = if (selected) {
             MaterialTheme.colorScheme.primaryContainer
         } else {
@@ -549,7 +551,6 @@ private fun DayButton(label: String, selected: Boolean, onClick: () -> Unit) {
         },
     ) {
         Box(
-            modifier = Modifier.size(32.dp),
             contentAlignment = Alignment.Center,
         ) {
             Text(
@@ -755,7 +756,7 @@ private fun AlarmRuleDialog(
             // 星期选择
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly,
+                horizontalArrangement = Arrangement.SpaceBetween,
             ) {
                 for (d in 1..7) {
                     AlarmDayButton(
@@ -768,6 +769,7 @@ private fun AlarmRuleDialog(
                                 (days + d).toMutableSet()
                             }
                         },
+                        modifier = Modifier.weight(1f),
                     )
                 }
             }
@@ -804,10 +806,11 @@ private fun AlarmRuleDialog(
 
 /** 闹钟星期按钮 */
 @Composable
-private fun AlarmDayButton(label: String, selected: Boolean, onClick: () -> Unit) {
+private fun AlarmDayButton(label: String, selected: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
     Surface(
         onClick = onClick,
         shape = CircleShape,
+        modifier = modifier.size(36.dp),
         color = if (selected) {
             MaterialTheme.colorScheme.primaryContainer
         } else {
@@ -815,7 +818,6 @@ private fun AlarmDayButton(label: String, selected: Boolean, onClick: () -> Unit
         },
     ) {
         Box(
-            modifier = Modifier.size(32.dp),
             contentAlignment = Alignment.Center,
         ) {
             Text(
