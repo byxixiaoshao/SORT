@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -33,16 +32,19 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.ScrollableTabRow
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
+import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -74,7 +76,6 @@ fun SharePreviewDialog(
     var engines by remember { mutableStateOf(TemplateRegistry.getAll()) }
     var selectedEngine by remember { mutableStateOf(engines.firstOrNull()) }
 
-    // 颜色用 HSL 滑块控制
     var bgHue by remember { mutableFloatStateOf(0f) }
     var bgSat by remember { mutableFloatStateOf(0f) }
     var bgLit by remember { mutableFloatStateOf(0.96f) }
@@ -94,6 +95,9 @@ fun SharePreviewDialog(
     var showJsonEditor by remember { mutableStateOf(false) }
     var jsonInput by remember { mutableStateOf("") }
     var jsonError by remember { mutableStateOf<String?>(null) }
+
+    var selectedTab by remember { mutableIntStateOf(0) }
+    val tabs = listOf("背景色", "文字色", "日期色", "装饰色", "水印")
 
     val time = try { LocalTime.parse(entry.time) } catch (_: Exception) { LocalTime.NOON }
     val dateTime = LocalDateTime.of(date, time)
@@ -126,211 +130,181 @@ fun SharePreviewDialog(
         color = MaterialTheme.colorScheme.surface,
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
-        // ═══════════ 上方：标题 + 预览 ═══════════
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 8.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text("分享预览", style = MaterialTheme.typography.titleMedium)
-            IconButton(onClick = onDismiss, modifier = Modifier.size(32.dp)) {
-                Icon(Icons.Outlined.Close, contentDescription = "关闭", modifier = Modifier.size(20.dp))
-            }
-        }
-
-        // 预览图（自适应填满预览区）
-        val preview = previewBitmap
-        if (preview != null) {
-            Box(
+            // ═══════════ 上方：标题 + 预览 ═══════════
+            Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .weight(1f)
-                    .padding(horizontal = 16.dp),
-                contentAlignment = Alignment.Center,
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
             ) {
-                Image(
-                    bitmap = preview.asImageBitmap(),
-                    contentDescription = "预览",
-                    modifier = Modifier
-                        .fillMaxWidth(0.8f)
-                        .fillMaxHeight()
-                        .clip(RoundedCornerShape(12.dp))
-                        .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(12.dp)),
-                    contentScale = ContentScale.Fit,
-                )
+                Text("分享预览", style = MaterialTheme.typography.titleMedium)
+                IconButton(onClick = onDismiss, modifier = Modifier.size(32.dp)) {
+                    Icon(Icons.Outlined.Close, contentDescription = "关闭", modifier = Modifier.size(20.dp))
+                }
             }
-        }
 
-        // ═══════════ 中间：配置项（可滚动） ═══════════
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .weight(1.2f)
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 16.dp),
-        ) {
-            // 模板选择
-            Text("模板", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Spacer(modifier = Modifier.height(6.dp))
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                val builtinIds = remember { TemplateRegistry.getBuiltin().map { it.id }.toSet() }
-                engines.forEach { engine ->
-                    val selected = selectedEngine?.id == engine.id
-                    val isBuiltin = engine.id in builtinIds
+            val preview = previewBitmap
+            if (preview != null) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f)
+                        .padding(horizontal = 16.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Image(
+                        bitmap = preview.asImageBitmap(),
+                        contentDescription = "预览",
+                        modifier = Modifier
+                            .fillMaxWidth(0.8f)
+                            .fillMaxHeight()
+                            .clip(RoundedCornerShape(12.dp))
+                            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(12.dp)),
+                        contentScale = ContentScale.Fit,
+                    )
+                }
+            }
+
+            // ═══════════ 中间：模板选择 ═══════════
+            Column(modifier = Modifier.padding(horizontal = 16.dp)) {
+                Text("模板", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Spacer(modifier = Modifier.height(6.dp))
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    val builtinIds = remember { TemplateRegistry.getBuiltin().map { it.id }.toSet() }
+                    engines.forEach { engine ->
+                        val selected = selectedEngine?.id == engine.id
+                        val isBuiltin = engine.id in builtinIds
+                        Surface(
+                            modifier = Modifier
+                                .padding(bottom = 6.dp)
+                                .clip(RoundedCornerShape(8.dp))
+                                .then(
+                                    if (isBuiltin) {
+                                        Modifier.clickable { selectedEngine = engine }
+                                    } else {
+                                        Modifier.combinedClickable(
+                                            onClick = { selectedEngine = engine },
+                                            onLongClick = {
+                                                TemplateRegistry.unregister(engine.id)
+                                                engines = TemplateRegistry.getAll()
+                                                if (selectedEngine?.id == engine.id) {
+                                                    selectedEngine = engines.firstOrNull()
+                                                }
+                                            },
+                                        )
+                                    }
+                                )
+                                .border(
+                                    if (selected) 2.dp else 1.dp,
+                                    if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant,
+                                    RoundedCornerShape(8.dp),
+                                ),
+                            color = if (selected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface,
+                        ) {
+                            Text(
+                                engine.name,
+                                modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = if (selected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface,
+                            )
+                        }
+                    }
                     Surface(
                         modifier = Modifier
                             .padding(bottom = 6.dp)
                             .clip(RoundedCornerShape(8.dp))
-                            .then(
-                                if (isBuiltin) {
-                                    Modifier.clickable { selectedEngine = engine }
-                                } else {
-                                    Modifier.combinedClickable(
-                                        onClick = { selectedEngine = engine },
-                                        onLongClick = {
-                                            TemplateRegistry.unregister(engine.id)
-                                            engines = TemplateRegistry.getAll()
-                                            if (selectedEngine?.id == engine.id) {
-                                                selectedEngine = engines.firstOrNull()
-                                            }
-                                        },
-                                    )
-                                }
-                            )
-                            .border(
-                                if (selected) 2.dp else 1.dp,
-                                if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant,
-                                RoundedCornerShape(8.dp),
-                            ),
-                        color = if (selected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface,
+                            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(8.dp))
+                            .clickable { showJsonEditor = true },
+                        color = MaterialTheme.colorScheme.surface,
                     ) {
-                        Text(
-                            engine.name,
-                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = if (selected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface,
-                        )
+                        Text("+ 添加", modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
+                            style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
-                Surface(
-                    modifier = Modifier
-                        .padding(bottom = 6.dp)
-                        .clip(RoundedCornerShape(8.dp))
-                        .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(8.dp))
-                        .clickable { showJsonEditor = true },
-                    color = MaterialTheme.colorScheme.surface,
-                ) {
-                    Text("+ 添加", modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
-                        style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
-
-            // 背景色滑块
-            Text("背景色", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Spacer(modifier = Modifier.height(4.dp))
-            ColorSlider(
-                hue = bgHue, onHueChange = { bgHue = it },
-                sat = bgSat, onSatChange = { bgSat = it },
-                lit = bgLit, onLitChange = { bgLit = it },
-                previewColor = Color.hsl(bgHue, bgSat, bgLit),
-            )
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            // 文字色滑块
-            Text("文字颜色", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Spacer(modifier = Modifier.height(4.dp))
-            ColorSlider(
-                hue = textHue, onHueChange = { textHue = it },
-                sat = textSat, onSatChange = { textSat = it },
-                lit = textLit, onLitChange = { textLit = it },
-                previewColor = Color.hsl(textHue, textSat, textLit),
-            )
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            // 日期色滑块
-            Text("日期颜色", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Spacer(modifier = Modifier.height(4.dp))
-            ColorSlider(
-                hue = dateHue, onHueChange = { dateHue = it },
-                sat = dateSat, onSatChange = { dateSat = it },
-                lit = dateLit, onLitChange = { dateLit = it },
-                previewColor = Color.hsl(dateHue, dateSat, dateLit),
-            )
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            // 分隔线色滑块
-            Text("装饰颜色", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Spacer(modifier = Modifier.height(4.dp))
-            ColorSlider(
-                hue = divHue, onHueChange = { divHue = it },
-                sat = divSat, onSatChange = { divSat = it },
-                lit = divLit, onLitChange = { divLit = it },
-                previewColor = Color.hsl(divHue, divSat, divLit),
-            )
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            // 水印
-            Row(
+            // ═══════════ Tab 切换栏 ═══════════
+            ScrollableTabRow(
+                selectedTabIndex = selectedTab,
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
+                edgePadding = 16.dp,
             ) {
-                Text("水印", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Switch(checked = showWatermark, onCheckedChange = { showWatermark = it })
-            }
-            if (showWatermark) {
-                Spacer(modifier = Modifier.height(6.dp))
-                OutlinedTextField(
-                    value = watermarkText,
-                    onValueChange = { watermarkText = it },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                    placeholder = { Text("输入水印文字") },
-                )
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
-        }
-
-        // ═══════════ 下方：分享按钮（固定） ═══════════
-        TextButton(
-            onClick = {
-                previewBitmap?.let { bitmap ->
-                    val file = File(context.cacheDir, "share_${System.currentTimeMillis()}.png")
-                    file.outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
-                    val uri = androidx.core.content.FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
-                    context.startActivity(Intent.createChooser(
-                        Intent(Intent.ACTION_SEND).apply {
-                            putExtra(Intent.EXTRA_STREAM, uri)
-                            type = "image/png"
-                            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                        }, "分享记录图片",
-                    ))
+                tabs.forEachIndexed { index, title ->
+                    Tab(
+                        selected = selectedTab == index,
+                        onClick = { selectedTab = index },
+                        text = { Text(title, style = MaterialTheme.typography.bodySmall) },
+                    )
                 }
-                onDismiss()
-            },
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 8.dp)
-                .height(48.dp),
-            shape = RoundedCornerShape(12.dp),
-        ) {
-            Icon(Icons.Outlined.Share, contentDescription = null, modifier = Modifier.size(20.dp))
-            Spacer(modifier = Modifier.width(8.dp))
-            Text("分享图片")
-        }
+            }
+
+            // ═══════════ 下方：参数调整区（可滚动） ═══════════
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 16.dp),
+            ) {
+                when (selectedTab) {
+                    0 -> ColorSlider("色相", "饱和", "明度", bgHue, { bgHue = it }, bgSat, { bgSat = it }, bgLit, { bgLit = it }, Color.hsl(bgHue, bgSat, bgLit))
+                    1 -> ColorSlider("色相", "饱和", "明度", textHue, { textHue = it }, textSat, { textSat = it }, textLit, { textLit = it }, Color.hsl(textHue, textSat, textLit))
+                    2 -> ColorSlider("色相", "饱和", "明度", dateHue, { dateHue = it }, dateSat, { dateSat = it }, dateLit, { dateLit = it }, Color.hsl(dateHue, dateSat, dateLit))
+                    3 -> ColorSlider("色相", "饱和", "明度", divHue, { divHue = it }, divSat, { divSat = it }, divLit, { divLit = it }, Color.hsl(divHue, divSat, divLit))
+                    4 -> {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Text("显示水印", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Switch(checked = showWatermark, onCheckedChange = { showWatermark = it })
+                        }
+                        if (showWatermark) {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            OutlinedTextField(
+                                value = watermarkText,
+                                onValueChange = { watermarkText = it },
+                                modifier = Modifier.fillMaxWidth(),
+                                singleLine = true,
+                                placeholder = { Text("输入水印文字") },
+                            )
+                        }
+                    }
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+            }
+
+            // ═══════════ 底部：分享按钮 ═══════════
+            TextButton(
+                onClick = {
+                    previewBitmap?.let { bitmap ->
+                        val file = File(context.cacheDir, "share_${System.currentTimeMillis()}.png")
+                        file.outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
+                        val uri = androidx.core.content.FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
+                        context.startActivity(Intent.createChooser(
+                            Intent(Intent.ACTION_SEND).apply {
+                                putExtra(Intent.EXTRA_STREAM, uri)
+                                type = "image/png"
+                                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                            }, "分享记录图片",
+                        ))
+                    }
+                    onDismiss()
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp)
+                    .height(48.dp),
+                shape = RoundedCornerShape(12.dp),
+            ) {
+                Icon(Icons.Outlined.Share, contentDescription = null, modifier = Modifier.size(20.dp))
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("分享图片")
+            }
         }
     }
 
-    // JSON 模板编辑器弹窗
     if (showJsonEditor) {
         JsonEditorOverlay(
             jsonInput = jsonInput,
@@ -355,58 +329,40 @@ fun SharePreviewDialog(
 
 @Composable
 private fun ColorSlider(
-    hue: Float, onHueChange: (Float) -> Unit,
-    sat: Float, onSatChange: (Float) -> Unit,
-    lit: Float, onLitChange: (Float) -> Unit,
+    label1: String, label2: String, label3: String,
+    v1: Float, onV1Change: (Float) -> Unit,
+    v2: Float, onV2Change: (Float) -> Unit,
+    v3: Float, onV3Change: (Float) -> Unit,
     previewColor: Color,
 ) {
     Column {
-        // 色相滑块 0~360
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("色相", style = MaterialTheme.typography.bodySmall, modifier = Modifier.width(36.dp))
+            Text(label1, style = MaterialTheme.typography.bodySmall, modifier = Modifier.width(36.dp))
             Slider(
-                value = hue,
-                onValueChange = { onHueChange(it) },
-                valueRange = 0f..360f,
-                modifier = Modifier.weight(1f),
-                colors = SliderDefaults.colors(
-                    thumbColor = previewColor,
-                    activeTrackColor = Color.hsl(hue, 1f, 0.5f),
-                ),
+                value = v1, onValueChange = onV1Change,
+                valueRange = 0f..360f, modifier = Modifier.weight(1f),
+                colors = SliderDefaults.colors(thumbColor = previewColor, activeTrackColor = Color.hsl(v1, 1f, 0.5f)),
             )
-            Text("${hue.roundToInt()}°", style = MaterialTheme.typography.bodySmall, modifier = Modifier.width(36.dp))
+            Text("${v1.roundToInt()}°", style = MaterialTheme.typography.bodySmall, modifier = Modifier.width(36.dp))
         }
-        // 饱和度滑块 0~1
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("饱和", style = MaterialTheme.typography.bodySmall, modifier = Modifier.width(36.dp))
+            Text(label2, style = MaterialTheme.typography.bodySmall, modifier = Modifier.width(36.dp))
             Slider(
-                value = sat,
-                onValueChange = { onSatChange(it) },
-                valueRange = 0f..1f,
-                modifier = Modifier.weight(1f),
-                colors = SliderDefaults.colors(
-                    thumbColor = previewColor,
-                    activeTrackColor = Color.hsl(hue, 1f, 0.5f),
-                ),
+                value = v2, onValueChange = onV2Change,
+                valueRange = 0f..1f, modifier = Modifier.weight(1f),
+                colors = SliderDefaults.colors(thumbColor = previewColor, activeTrackColor = Color.hsl(v1, 1f, 0.5f)),
             )
-            Text("${(sat * 100).roundToInt()}%", style = MaterialTheme.typography.bodySmall, modifier = Modifier.width(36.dp))
+            Text("${(v2 * 100).roundToInt()}%", style = MaterialTheme.typography.bodySmall, modifier = Modifier.width(36.dp))
         }
-        // 明度滑块 0~1
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("明度", style = MaterialTheme.typography.bodySmall, modifier = Modifier.width(36.dp))
+            Text(label3, style = MaterialTheme.typography.bodySmall, modifier = Modifier.width(36.dp))
             Slider(
-                value = lit,
-                onValueChange = { onLitChange(it) },
-                valueRange = 0f..1f,
-                modifier = Modifier.weight(1f),
-                colors = SliderDefaults.colors(
-                    thumbColor = previewColor,
-                    activeTrackColor = Color.hsl(hue, sat, 0.5f),
-                ),
+                value = v3, onValueChange = onV3Change,
+                valueRange = 0f..1f, modifier = Modifier.weight(1f),
+                colors = SliderDefaults.colors(thumbColor = previewColor, activeTrackColor = Color.hsl(v1, v2, 0.5f)),
             )
-            Text("${(lit * 100).roundToInt()}%", style = MaterialTheme.typography.bodySmall, modifier = Modifier.width(36.dp))
+            Text("${(v3 * 100).roundToInt()}%", style = MaterialTheme.typography.bodySmall, modifier = Modifier.width(36.dp))
         }
-        // 预览色块
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -475,26 +431,23 @@ private fun JsonEditorOverlay(
     }
 }
 
-/** HSL → ARGB Long */
 private fun hslToArgb(h: Float, s: Float, l: Float): Long {
     val c = (1f - kotlin.math.abs(2f * l - 1f)) * s
     val x = c * (1f - kotlin.math.abs((h / 60f) % 2f - 1f))
     val m = l - c / 2f
     val (r, g, b) = when {
-        h < 60 -> tripleOf(c, x, 0f)
-        h < 120 -> tripleOf(x, c, 0f)
-        h < 180 -> tripleOf(0f, c, x)
-        h < 240 -> tripleOf(0f, x, c)
-        h < 300 -> tripleOf(x, 0f, c)
-        else -> tripleOf(c, 0f, x)
+        h < 60 -> Triple(c, x, 0f)
+        h < 120 -> Triple(x, c, 0f)
+        h < 180 -> Triple(0f, c, x)
+        h < 240 -> Triple(0f, x, c)
+        h < 300 -> Triple(x, 0f, c)
+        else -> Triple(c, 0f, x)
     }
     val ri = ((r + m) * 255).toInt().coerceIn(0, 255)
     val gi = ((g + m) * 255).toInt().coerceIn(0, 255)
     val bi = ((b + m) * 255).toInt().coerceIn(0, 255)
     return (0xFF.toLong() shl 24) or (ri.toLong() shl 16) or (gi.toLong() shl 8) or bi.toLong()
 }
-
-private fun tripleOf(a: Float, b: Float, c: Float) = Triple(a, b, c)
 
 private val EXAMPLE_JSON = """
 {
