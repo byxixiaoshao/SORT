@@ -20,6 +20,8 @@ import com.bicy.note.data.model.MARKER_STAR
 import com.bicy.note.data.model.NoteEntry
 import java.io.File
 import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 
 object ShareImageBuilder {
@@ -39,6 +41,24 @@ object ShareImageBuilder {
         context: Context,
         schema: TemplateSchema,
         date: LocalDate,
+        entry: NoteEntry,
+        images: List<Bitmap>,
+        videoCovers: List<Bitmap>,
+    ): Bitmap {
+        // 将 LocalDate + entry.time 合并为 LocalDateTime
+        val time = try {
+            LocalTime.parse(entry.time)
+        } catch (_: Exception) {
+            LocalTime.NOON
+        }
+        val dateTime = LocalDateTime.of(date, time)
+        return renderWithDateTime(context, schema, dateTime, entry, images, videoCovers)
+    }
+
+    fun renderWithDateTime(
+        context: Context,
+        schema: TemplateSchema,
+        dateTime: LocalDateTime,
         entry: NoteEntry,
         images: List<Bitmap>,
         videoCovers: List<Bitmap>,
@@ -63,17 +83,16 @@ object ShareImageBuilder {
 
             when (node) {
                 is LayoutNode.TextNode -> {
-                    val text = resolveTextPlaceholder(node.content, date, entry)
+                    val text = resolveTextPlaceholder(node.content, dateTime.toLocalDate(), entry)
                     val drawn = drawText(canvas, text, node, px, py, c)
                     autoY = py + drawn + 8f
                 }
                 is LayoutNode.DateNode -> {
-                    val text = date.format(DateTimeFormatter.ofPattern(node.format))
+                    val text = dateTime.format(DateTimeFormatter.ofPattern(node.format))
                     val paint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
                         textSize = node.fontSize.toFloat()
                         color = node.color.toInt()
                     }
-                    val w = paint.measureText(text)
                     canvas.drawText(text, px, py + node.fontSize, paint)
                     autoY = py + node.fontSize + 16f
                 }
