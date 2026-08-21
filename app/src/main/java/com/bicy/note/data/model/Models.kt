@@ -83,12 +83,25 @@ data class DndRule(
     val enabled: Boolean = true,
 )
 
+/** 闹钟规则（应用内自管，由 ScheduledAlarm 闹钟调度实施） */
+@Serializable
+data class AlarmRule(
+    val id: String,
+    val name: String = "闹钟",
+    /** 生效星期：1=周一 .. 7=周日 */
+    val days: List<Int> = listOf(1, 2, 3, 4, 5, 6, 7),
+    /** 闹钟时间（当日分钟数，0~1439） */
+    val minuteOfDay: Int = 7 * 60,
+    val enabled: Boolean = true,
+)
+
 @Serializable
 data class AppSettings(
     val dndEnabled: Boolean = false,
     val dndStartMinute: Int = 22 * 60,
     val dndEndMinute: Int = 7 * 60,
     val dndRules: List<DndRule> = emptyList(),
+    val alarmRules: List<AlarmRule> = emptyList(),
     val notificationListening: Boolean = false,
     val reminderEmails: Boolean = true,
     val quickRecordEnabled: Boolean = false,

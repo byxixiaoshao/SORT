@@ -41,6 +41,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -69,8 +70,10 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import com.bicy.note.data.LocalRepository
 import com.bicy.note.data.SystemDndManager
+import com.bicy.note.data.model.AlarmRule
 import com.bicy.note.data.model.DndRule
 import com.bicy.note.ui.LocalSettingsOverlayHost
+import com.bicy.note.ui.ScheduledAlarm
 import com.bicy.note.ui.ScheduledDnd
 import com.bicy.note.ui.components.ScreenHeader
 import com.bicy.note.ui.screens.clock.WheelTimePicker
@@ -109,6 +112,7 @@ fun ClockScreen() {
     var instantActive by remember { mutableStateOf(ScheduledDnd.instantUntil(context) > System.currentTimeMillis()) }
     var pendingDnd by remember { mutableStateOf(false) }
     var dndExpanded by remember { mutableStateOf(true) }
+    var alarmExpanded by remember { mutableStateOf(true) }
 
     fun refreshInstant() {
         instantActive = ScheduledDnd.instantUntil(context) > System.currentTimeMillis()
@@ -121,6 +125,7 @@ fun ClockScreen() {
             accessGranted = SystemDndManager.isAccessGranted(context)
         }
         ScheduledDnd.arm(context)
+        ScheduledAlarm.arm(context)
         refreshInstant()
     }
 
@@ -172,6 +177,24 @@ fun ClockScreen() {
                         repository.updateDndRule(rule.id, name, startMinute, endMinute, days)
                     }
                     ScheduledDnd.arm(context)
+                    overlayHost.close()
+                },
+            )
+        }
+    }
+
+    fun openAlarmDialog(rule: AlarmRule?) {
+        overlayHost.open {
+            AlarmRuleDialog(
+                rule = rule,
+                onDismiss = { overlayHost.close() },
+                onSave = { name, days, minuteOfDay ->
+                    if (rule == null) {
+                        repository.addAlarmRule(name, minuteOfDay, days)
+                    } else {
+                        repository.updateAlarmRule(rule.id, name, minuteOfDay, days)
+                    }
+                    ScheduledAlarm.arm(context)
                     overlayHost.close()
                 },
             )
@@ -288,6 +311,46 @@ fun ClockScreen() {
                     onDelete = {
                         repository.removeDndRule(rule.id)
                         ScheduledDnd.arm(context)
+                    },
+                )
+            }
+        }
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // ── 闹钟 ──
+        SettingCategorySection(
+            title = "闹钟",
+            isExpanded = alarmExpanded,
+            onToggle = { alarmExpanded = !alarmExpanded },
+        ) {
+            SettingClickItemWithIcon(
+                icon = Icons.Outlined.Add,
+                title = "添加闹钟",
+                subtitle = "按星期与时间自动响铃提醒",
+                onClick = { openAlarmDialog(null) },
+            )
+            if (settings.alarmRules.isEmpty()) {
+                Text(
+                    text = "暂无闹钟，点击「添加闹钟」创建",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 12.dp),
+                    textAlign = TextAlign.Center,
+                )
+            }
+            settings.alarmRules.forEach { rule ->
+                AlarmRuleCard(
+                    rule = rule,
+                    onToggle = {
+                        repository.toggleAlarmRule(rule.id)
+                        ScheduledAlarm.arm(context)
+                    },
+                    onEdit = { openAlarmDialog(rule) },
+                    onDelete = {
+                        repository.removeAlarmRule(rule.id)
+                        ScheduledAlarm.arm(context)
                     },
                 )
             }
@@ -594,6 +657,171 @@ private fun TimeChip(text: String, active: Boolean, onClick: () -> Unit) {
             },
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
         )
+    }
+}
+
+/** 闹钟规则卡片：名称 + 星期/时间 + 开关 + 删除 */
+@Composable
+private fun AlarmRuleCard(
+    rule: AlarmRule,
+    onToggle: () -> Unit,
+    onEdit: () -> Unit,
+    onDelete: () -> Unit,
+) {
+    val shape = RoundedCornerShape(12.dp)
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp)
+            .height(56.dp)
+            .dropShadow(
+                config = ShadowConfig.Light,
+                shape = shape,
+                clip = false,
+            )
+            .clip(shape)
+            .background(MaterialTheme.colorScheme.surface)
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+                onClick = onEdit,
+            )
+            .padding(start = 16.dp, end = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                if (rule.enabled) {
+                    BreathingDot()
+                    Spacer(modifier = Modifier.width(8.dp))
+                }
+                Text(
+                    text = rule.name,
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+            }
+            Text(
+                text = "${daysText(rule.days)} ${formatMinuteOfDay(rule.minuteOfDay)}",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        Switch(checked = rule.enabled, onCheckedChange = { onToggle() })
+        IconButton(onClick = onDelete) {
+            Icon(
+                imageVector = Icons.Outlined.DeleteOutline,
+                contentDescription = "删除闹钟",
+                tint = MaterialTheme.colorScheme.error,
+            )
+        }
+    }
+}
+
+/** 新建/编辑闹钟弹窗：名称 + 星期按钮 + 时间（滚轮） */
+@Composable
+private fun AlarmRuleDialog(
+    rule: AlarmRule?,
+    onDismiss: () -> Unit,
+    onSave: (name: String, days: List<Int>, minuteOfDay: Int) -> Unit,
+) {
+    var name by remember { mutableStateOf(rule?.name ?: "") }
+    var days by remember { mutableStateOf((rule?.days ?: (1..7).toList()).toMutableSet()) }
+    var hour by remember { mutableIntStateOf((rule?.minuteOfDay ?: 7 * 60) / 60) }
+    var minute by remember { mutableIntStateOf((rule?.minuteOfDay ?: 7 * 60) % 60) }
+
+    SettingsPopupShell(onDismiss = onDismiss) {
+        Column(
+            modifier = Modifier
+                .width(320.dp)
+                .padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Text(
+                text = if (rule == null) "新建闹钟" else "编辑闹钟",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+            OutlinedTextField(
+                value = name,
+                onValueChange = { name = it },
+                modifier = Modifier.fillMaxWidth(),
+                placeholder = { Text(text = "闹钟名称") },
+                singleLine = true,
+            )
+            // 星期选择
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                for (d in 1..7) {
+                    AlarmDayButton(
+                        label = weekdayLabels[d - 1],
+                        selected = d in days,
+                        onClick = {
+                            days = if (d in days) {
+                                (days - d).toMutableSet()
+                            } else {
+                                (days + d).toMutableSet()
+                            }
+                        },
+                    )
+                }
+            }
+            WheelTimePicker(
+                hour = hour,
+                minute = minute,
+                onHourChange = { hour = it },
+                onMinuteChange = { minute = it },
+                modifier = Modifier.align(Alignment.CenterHorizontally),
+            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                TextButton(onClick = onDismiss) { Text(text = "取消") }
+                Spacer(modifier = Modifier.width(8.dp))
+                Button(
+                    onClick = {
+                        onSave(
+                            name.trim().ifEmpty { rule?.name ?: "闹钟" },
+                            days.sorted(),
+                            hour * 60 + minute,
+                        )
+                    },
+                    shape = RoundedCornerShape(8.dp),
+                ) {
+                    Text(text = if (rule == null) "创建" else "保存")
+                }
+            }
+        }
+    }
+}
+
+/** 闹钟星期按钮 */
+@Composable
+private fun AlarmDayButton(label: String, selected: Boolean, onClick: () -> Unit) {
+    Surface(
+        onClick = onClick,
+        shape = CircleShape,
+        color = if (selected) {
+            MaterialTheme.colorScheme.primaryContainer
+        } else {
+            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
+        },
+    ) {
+        Box(
+            modifier = Modifier.size(32.dp),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelLarge,
+                color = if (selected) {
+                    MaterialTheme.colorScheme.onPrimaryContainer
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                },
+            )
+        }
     }
 }
 

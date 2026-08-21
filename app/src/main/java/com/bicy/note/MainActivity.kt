@@ -17,6 +17,7 @@ import com.bicy.note.data.NoteRepository
 import com.bicy.note.ui.AppNavigation
 import com.bicy.note.ui.AppNotificationListener
 import com.bicy.note.ui.QuickNoteService
+import com.bicy.note.ui.ScheduledAlarm
 import com.bicy.note.ui.ScheduledDnd
 import com.bicy.note.ui.theme.寄意Theme
 import kotlinx.coroutines.Dispatchers
@@ -72,6 +73,7 @@ class MainActivity : ComponentActivity() {
                 startService(Intent(this@MainActivity, QuickNoteService::class.java))
             }
             ScheduledDnd.arm(this@MainActivity)
+            ScheduledAlarm.arm(this@MainActivity)
             if (settings.notificationListening && !settings.listenerConnected) {
                 AppNotificationListener.forceRebind(this@MainActivity)
             }

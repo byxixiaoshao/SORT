@@ -7,6 +7,7 @@ import android.os.Environment
 import android.provider.MediaStore
 import android.provider.OpenableColumns
 import android.util.Log
+import com.bicy.note.data.model.AlarmRule
 import com.bicy.note.data.model.AppSettings
 import com.bicy.note.data.model.DayNotes
 import com.bicy.note.data.model.DndRule
@@ -538,6 +539,52 @@ class NoteRepository private constructor(private val context: Context) {
     fun removeDndRule(id: String) {
         updateSettings { settings ->
             settings.copy(dndRules = settings.dndRules.filterNot { it.id == id })
+        }
+    }
+
+    fun addAlarmRule(name: String, minuteOfDay: Int, days: List<Int>) {
+        updateSettings { settings ->
+            val rule = AlarmRule(
+                id = UUID.randomUUID().toString(),
+                name = name.trim().ifEmpty { "闹钟" },
+                days = days,
+                minuteOfDay = minuteOfDay,
+            )
+            settings.copy(alarmRules = settings.alarmRules + rule)
+        }
+    }
+
+    fun updateAlarmRule(id: String, name: String, minuteOfDay: Int, days: List<Int>) {
+        updateSettings { settings ->
+            settings.copy(
+                alarmRules = settings.alarmRules.map {
+                    if (it.id == id) {
+                        it.copy(
+                            name = name.trim().ifEmpty { "闹钟" },
+                            days = days,
+                            minuteOfDay = minuteOfDay,
+                        )
+                    } else {
+                        it
+                    }
+                },
+            )
+        }
+    }
+
+    fun toggleAlarmRule(id: String) {
+        updateSettings { settings ->
+            settings.copy(
+                alarmRules = settings.alarmRules.map {
+                    if (it.id == id) it.copy(enabled = !it.enabled) else it
+                },
+            )
+        }
+    }
+
+    fun removeAlarmRule(id: String) {
+        updateSettings { settings ->
+            settings.copy(alarmRules = settings.alarmRules.filterNot { it.id == id })
         }
     }
 
