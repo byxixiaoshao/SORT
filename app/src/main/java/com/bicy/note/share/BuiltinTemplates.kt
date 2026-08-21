@@ -101,19 +101,17 @@ class MagazineTemplate : TemplateEngine {
         videoCovers: List<Bitmap>,
         config: TemplateConfig,
     ): Bitmap {
-        val bg = if (config.bgColor == TemplateConfig().bgColor) 0xFF1A1A1A else config.bgColor
-        val textC = if (config.textColor == TemplateConfig().textColor) 0xFFFFFFFF else config.textColor
         val schema = TemplateSchema(
             id = id, name = name,
             canvas = CanvasConfig(
                 width = config.canvasWidth, height = config.canvasMaxHeight,
-                background = BackgroundConfig(type = "solid", color = bg),
+                background = BackgroundConfig(type = "solid", color = config.bgColor),
             ),
             nodes = listOf(
                 LayoutNode.ImageGridNode(id = "img", x = 0f, y = 0f, width = 100f, columns = 1,
                     spacing = 0f, borderRadius = 0f, maxImages = 1),
                 LayoutNode.TextNode(id = "text", x = 8f, y = 55f, width = 84f, fontSize = 56,
-                    color = textC, fontWeight = 700, maxLines = 10, content = "{{text}}"),
+                    color = config.textColor, fontWeight = 700, maxLines = 10, content = "{{text}}"),
                 LayoutNode.LineNode(id = "accent", x = 8f, y = 90f, width = 20f, thickness = 4f, color = 0xFFD4AF37),
                 LayoutNode.DateNode(id = "date", x = 8f, y = 92f, fontSize = 28, color = 0xFF888888),
                 LayoutNode.WatermarkNode(id = "wm", x = 50f, y = 97f, fontSize = 24,

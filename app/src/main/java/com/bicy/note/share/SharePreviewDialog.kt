@@ -63,12 +63,15 @@ fun SharePreviewDialog(
     onDismiss: () -> Unit,
 ) {
     val context = LocalContext.current
-    val engines = remember { TemplateRegistry.getAll() }
+    var engines by remember { mutableStateOf(TemplateRegistry.getAll()) }
     var selectedEngine by remember { mutableStateOf(engines.firstOrNull()) }
     var bgColor by remember { mutableStateOf(0xFFFAFAFA) }
     var textColor by remember { mutableStateOf(0xFF1A1A1A) }
     var showWatermark by remember { mutableStateOf(true) }
     var previewBitmap by remember { mutableStateOf<Bitmap?>(null) }
+    var showJsonEditor by remember { mutableStateOf(false) }
+    var jsonInput by remember { mutableStateOf("") }
+    var jsonError by remember { mutableStateOf<String?>(null) }
 
     val time = try { LocalTime.parse(entry.time) } catch (_: Exception) { LocalTime.NOON }
     val dateTime = LocalDateTime.of(date, time)
@@ -108,8 +111,7 @@ fun SharePreviewDialog(
     Surface(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.scrim.copy(alpha = 0.5f))
-            .clickable(onClick = onDismiss),
+            .background(MaterialTheme.colorScheme.scrim.copy(alpha = 0.5f)),
     ) {
         Column(
             modifier = Modifier
@@ -173,6 +175,22 @@ fun SharePreviewDialog(
                             color = if (selected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface,
                         )
                     }
+                }
+                // 添加自定义模板按钮
+                Surface(
+                    modifier = Modifier
+                        .padding(bottom = 6.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(8.dp))
+                        .clickable { showJsonEditor = true },
+                    color = MaterialTheme.colorScheme.surface,
+                ) {
+                    Text(
+                        "+ 添加",
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                 }
             }
 
@@ -270,4 +288,103 @@ fun SharePreviewDialog(
             }
         }
     }
+
+    // JSON 模板编辑器弹窗
+    if (showJsonEditor) {
+        Surface(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.scrim.copy(alpha = 0.7f))
+                .clickable { showJsonEditor = false },
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(24.dp)
+                    .verticalScroll(rememberScrollState()),
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text("添加自定义模板", style = MaterialTheme.typography.titleMedium)
+                    IconButton(onClick = { showJsonEditor = false }) {
+                        Icon(Icons.Outlined.Close, contentDescription = "关闭")
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                Text(
+                    text = "粘贴模板 JSON：",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+
+                androidx.compose.material3.OutlinedTextField(
+                    value = jsonInput,
+                    onValueChange = { jsonInput = it; jsonError = null },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(240.dp),
+                    placeholder = { Text("{ ... }", style = MaterialTheme.typography.bodySmall) },
+                    textStyle = MaterialTheme.typography.bodySmall,
+                    isError = jsonError != null,
+                    supportingText = jsonError?.let { { Text(it, color = MaterialTheme.colorScheme.error) } },
+                )
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    TextButton(
+                        onClick = {
+                            jsonInput = EXAMPLE_JSON.trimIndent()
+                        },
+                        modifier = Modifier.weight(1f),
+                    ) { Text("填入示例") }
+
+                    TextButton(
+                        onClick = {
+                            val template = JsonTemplate.fromJson(jsonInput)
+                            if (template != null) {
+                                TemplateRegistry.register(template)
+                                engines = TemplateRegistry.getAll()
+                                selectedEngine = template
+                                showJsonEditor = false
+                            } else {
+                                jsonError = "JSON 解析失败，请检查格式"
+                            }
+                        },
+                        modifier = Modifier.weight(1f),
+                    ) { Text("确认添加") }
+                }
+            }
+        }
+    }
 }
+
+private val EXAMPLE_JSON = """
+{
+  "id": "user_custom",
+  "name": "我的模板",
+  "canvas": {
+    "width": 1080,
+    "height": 1920,
+    "background": { "type": "solid", "color": 4294967295 }
+  },
+  "nodes": [
+    { "type": "DateNode", "id": "date", "x": 8, "y": 5, "fontSize": 32, "color": 2301546496 },
+    { "type": "TextNode", "id": "text", "x": 8, "y": 12, "width": 84, "fontSize": 48, "color": 4278190080, "content": "{{text}}" },
+    { "type": "ImageGridNode", "id": "img", "x": 8, "y": 60, "width": 84, "columns": 2, "spacing": 16, "borderRadius": 12, "maxImages": 6 },
+    { "type": "WatermarkNode", "id": "wm", "x": 50, "y": 95, "fontSize": 24, "color": 3086721395, "text": "来自「寄意」笔记" }
+  ],
+  "decorations": [
+    { "type": "BorderDecoration", "id": "b", "color": 4280825704, "thickness": 2, "cornerRadius": 20 }
+  ]
+}
+""".trimIndent()
